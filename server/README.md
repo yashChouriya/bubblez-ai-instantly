@@ -1,10 +1,6 @@
-# chat-gpt-celery-flask
-
-A sample implementation of a chatbot using Flask, Celery, and GPT-3.
-
 ## Overview
 
-This repository demonstrates how to create a simple chatbot by combining the power of Flask, Celery, and GPT-3. Flask is used as the web framework to handle HTTP requests and responses, Celery is used as the task queue to run GPT-3 requests asynchronously, and GPT-3 is used as the language generation model to generate text based on the prompts provided by the user.
+This repository demonstrates how to create a simple chatbot by combining the power of Flask, Celery, GPT-3 and Superpowered-AI. Flask is used as the web framework to handle HTTP requests and responses, Celery is used as the task queue to run GPT-3 requests asynchronously, and GPT-3 is used as the language generation model to generate text based on the prompts provided by the user.
 
 ## Requirements
 
@@ -41,7 +37,7 @@ This repository demonstrates how to create a simple chatbot by combining the pow
    ```
    flask run
    ```
-8. Send a POST request to `http://localhost:5000/chat` with a JSON body containing the prompt, for example:
+8. Send a POST request to `http://localhost:5000/chat-async` with a JSON body containing the prompt, for example (gpt):
    ```
    { "prompt": "What is the capital of France?" }
    ```
@@ -53,7 +49,6 @@ This repository demonstrates how to create a simple chatbot by combining the pow
     ```
     http://localhost:5000/result/8d5f0b5d-a5e5-4b8f-b5f5-5a5a5a5a5a5a
     ```
-11. To genarate image same process as 7 to 9 just POST request URL is `http://localhost:5000/image_chat` and GET URL is `http://localhost:5000/image/<task_id>`
 
 ## Docker
 
