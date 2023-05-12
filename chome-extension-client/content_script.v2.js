@@ -1,5 +1,43 @@
 const runScript = () => {
-  console.log("extension loaded successfully");
+  const chromeStorage = {
+    get: (keys) => {
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.get(keys, (data) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(data);
+          }
+        });
+      });
+    },
+
+    set: (items) => {
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.set(items, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve();
+          }
+        });
+      });
+    },
+
+    remove: (keys) => {
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.remove(keys, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve();
+          }
+        });
+      });
+    },
+  };
+
+  console.log("extension loaded successfully", window);
 
   let globalStyles = `
   .bot-icon-text-container{
@@ -469,8 +507,8 @@ const runScript = () => {
       </div>
       <div class="bot-modal-content">
         <div class="chat-section" id="chat-section"></div>
-        <div id="commands-container">
-            <div class="command">What is instantly?</div>
+        <div id="commands-container" onclick="window.location.href='https://app.instantly.ai/auth/login'">
+            <div class="command">Login</div>
         </div>
         <div class="messageBox">
           <textarea
@@ -497,6 +535,29 @@ const runScript = () => {
   </div>
 `;
 
+  const defaultChatMessages = [
+    {
+      text: "Hi, how can i help you?",
+      by: "bot",
+      feedback_submitted: true,
+      feedback: "Yes",
+    },
+  ];
+
+  const defaultExecuteMessages = [
+    {
+      text: "Hi, how can i help you?",
+      by: "bot",
+      feedback_submitted: true,
+      feedback: "Yes",
+    },
+  ];
+
+  const getActiveTab = () => {
+    const chatTab = document.getElementById("chatTab");
+    return chatTab.classList.contains("active") ? "chat" : "execute";
+  };
+
   // appending the html to the root element start
   let botTriggerDiv = document.createElement("div");
   botTriggerDiv.className = "bot-icon-text-container";
@@ -515,6 +576,7 @@ const runScript = () => {
   botTriggerDiv.addEventListener("click", () => {
     const modal = document.getElementById("myBotModal");
     modal.style.display = "block";
+    modal.style.opacity = "1";
   });
 
   let popupModal = document.createElement("div");
@@ -530,26 +592,68 @@ const runScript = () => {
   const executeTab = document.getElementById("executeTab");
   const chatTab = document.getElementById("chatTab");
   const commandsContainer = document.getElementById("commands-container");
+  const chatSection = document.getElementById("chat-section");
+  const botTextarea = document.getElementById("botTextarea");
+  const messageBoxSpan = document.getElementById("messageBoxSend");
 
-  const tabChanceHandle = (tabName) => {
+  const feedbackHandler = (index, feedback) => {
+    console.log("feedback", index);
+    const messagesDataArray =
+      getActiveTab() === "chat" ? defaultChatMessages : defaultExecuteMessages;
+    messagesDataArray[parseInt(index)] = {
+      ...messagesDataArray[parseInt(index)],
+      feedback_submitted: true,
+      feedback,
+    };
+    chatSection.innerHTML = updateChat(messagesDataArray);
+  };
+
+  const regenerateResponse = async (index) => {
+    index = parseInt(index);
+    let data = {};
+    const messagesDataArray =
+      getActiveTab() === "chat" ? defaultChatMessages : defaultExecuteMessages;
+    const temp = messagesDataArray;
+    for (const message of temp.reverse()) {
+      if (message.by === "human") {
+        data = message;
+        break;
+      }
+    }
+    messagesDataArray.reverse();
+    messagesDataArray[index] = {
+      ...messagesDataArray[index],
+      feedback_submitted: true,
+      feedback: "No",
+    };
+    chatSection.innerHTML = updateChat(messagesDataArray);
+    botTextarea.value = data.text;
+    await handleUserMessageSubmit();
+  };
+
+  const tabChangeHandler = (tabName) => {
     if (tabName === "chat") {
       chatTab.setAttribute("class", "tab active");
       executeTab.setAttribute("class", "tab");
       commandsContainer.style.display = "none";
+      chatSection.innerHTML = updateChat(defaultChatMessages);
     } else {
       chatTab.setAttribute("class", "tab");
       executeTab.setAttribute("class", "tab active");
-      commandsContainer.style.display = "flex";
+      if (defaultExecuteMessages.length === 1) {
+        commandsContainer.style.display = "flex";
+      }
+      chatSection.innerHTML = updateChat(defaultExecuteMessages);
     }
 
     return true;
   };
 
   executeTab.addEventListener("click", () => {
-    tabChanceHandle("execute");
+    tabChangeHandler("execute");
   });
   chatTab.addEventListener("click", () => {
-    tabChanceHandle("chat");
+    tabChangeHandler("chat");
   });
 
   // tab change logic end
@@ -560,70 +664,25 @@ const runScript = () => {
     modal.style.display = "none";
   });
 
-  const defaultChatMessages = [
-    {
-      text: "Hi, how can i help you?",
-      by: "bot",
-      feedback_submitted: true,
-      feedback: "Yes",
-    },
-  ];
-  const chatSection = document.getElementById("chat-section");
-  const botTextarea = document.getElementById("botTextarea");
-  const messageBoxSpan = document.getElementById("messageBoxSend");
-  // const feedbackYes = document.getElementById("feedbackYes");
-  // const feedbackNo = document.getElementById("feedbackNo");
-  // const regenerate = document.getElementById("regenerate");
-
-  // feedbackYes.addEventListener("click", () =>{})
-
-  window.feedbackHandler = (index, feedback) => {
-    console.log("feedback", index);
-    defaultChatMessages[parseInt(index)] = {
-      ...defaultChatMessages[parseInt(index)],
-      feedback_submitted: true,
-      feedback,
-    };
-    chatSection.innerHTML = updateChat(defaultChatMessages);
-  };
-
-  window.regenerateResponse = async (index) => {
-    index = parseInt(index);
-    let data = {};
-    const temp = defaultChatMessages;
-    for (const message of temp.reverse()) {
-      if (message.by === "human") {
-        data = message;
-        break;
-      }
-    }
-    defaultChatMessages.reverse();
-    defaultChatMessages[index] = {
-      ...defaultChatMessages[index],
-      feedback_submitted: true,
-      feedback: "No",
-    };
-    chatSection.innerHTML = updateChat(defaultChatMessages);
-    botTextarea.value = data.text;
-    await handleUserMessageSubmit();
-  };
-
   const updateChat = (chatData) => {
     let chatSectionInnerHtml = "";
     for (const [index, message] of chatData.entries()) {
+      const showFeedback = message.by === "bot" && !message?.feedback_submitted;
+
       const feedbackDiv = `
-      <div class="feedback-container" style="flex-direction: column;">
+      <div class="feedback-container" style="flex-direction: column;" data-index="${index}">
         <div class="feedback-text">Was this response helpful?</div>
         <div class="feedback-button-container">
-          <div class="feedback-buttons" id="feedbackYes" onclick="window.feedbackHandler('${index}', 'Yes')">Yes</div>
-          <div class="feedback-buttons" id="feedbackNo" onclick="window.feedbackHandler('${index}','No')">No</div>
-          <div class="feedback-buttons" id="regenerate" onclick="window.regenerateResponse('${index}')"">
+          <div class="feedback-buttons" data-index="${index}" id="feedbackYes">Yes</div>
+          <div class="feedback-buttons" data-index="${index}" id="feedbackNo">No</div>
+          <div class="feedback-buttons" data-index="${index}" id="regenerate">
             <img src="https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/reload.svg"></img>
             <span>Regenerate response</span>
           </div>
         </div>
       </div>
       `;
+
       if (message.text) {
         chatSectionInnerHtml += `
         <div>
@@ -633,11 +692,9 @@ const runScript = () => {
               </div>
               <div class="${message.by}-head-reply">${message.text}</div>
           </div>
-          ${
-            message.by === "bot" && !message?.feedback_submitted
-              ? feedbackDiv
-              : ""
-          }
+          <div style="display:${
+            showFeedback ? "inherit" : "none"
+          }">${feedbackDiv}</div>
           <div style="border-bottom: 0.5px solid #DDDFE2;"></div>
         </div>
         `;
@@ -656,7 +713,11 @@ const runScript = () => {
     return chatSectionInnerHtml;
   };
 
-  chatSection.innerHTML = updateChat(defaultChatMessages);
+  chatSection.innerHTML =
+    getActiveTab() === "chat"
+      ? updateChat(defaultChatMessages)
+      : updateChat(defaultExecuteMessages);
+
   chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
 
   const handleUserMessageSubmit = async () => {
@@ -669,19 +730,112 @@ const runScript = () => {
     sendButtonIcon.style.display = "none";
     messageBoxSpan.style.backgroundColor = "#CACCCC";
     sendButtonText.innerText = "Generating";
+    const messagesDataArray =
+      getActiveTab() === "chat" ? defaultChatMessages : defaultExecuteMessages;
 
-    defaultChatMessages.push({
+    if (getActiveTab() !== "chat" && messagesDataArray.length === 1) {
+      commandsContainer.style.display = "flex";
+    } else {
+      commandsContainer.style.display = "none";
+    }
+
+    messagesDataArray.push({
       text: message,
       by: "human",
     });
 
-    defaultChatMessages.push({
+    chatSection.innerHTML = updateChat(messagesDataArray);
+    chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
+
+    if (getActiveTab() !== "chat" && defaultExecuteMessages.length === 1) {
+      commandsContainer.style.display = "flex";
+    } else {
+      commandsContainer.style.display = "none";
+    }
+
+    if (getActiveTab() !== "chat" && message === "login") {
+      await chromeStorage.set({
+        automationEvent: "LOGIN_EVENT",
+        command: "ENTER_EMAIL_FOR_LOGIN",
+      });
+      window.location.href = "https://app.instantly.ai/auth/login";
+      return;
+    }
+
+    const automationEvent = await chromeStorage.get([
+      "automationEvent",
+      "command",
+    ]);
+
+    if (
+      automationEvent?.command &&
+      automationEvent.command === "ENTER_EMAIL_FOR_LOGIN"
+    ) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailRegex.test(message)) {
+        messagesDataArray.push({
+          text: "Please enter a valid email address",
+          by: "bot",
+          feedback_submitted: true,
+          feedback: "Yes",
+        });
+        chatSection.innerHTML = updateChat(messagesDataArray);
+        chatSection.scrollTop =
+          chatSection.scrollHeight - chatSection.clientHeight;
+        botTextarea.removeAttribute("readonly");
+        sendButtonIcon.style.display = "inline-flex";
+        messageBoxSpan.style.backgroundColor = "#620091";
+        sendButtonText.innerText = "Ask";
+        return;
+      } else {
+        await chromeStorage.set({
+          automationEvent: "LOGIN_EVENT",
+          command: "ENTER_PASSWORD_FOR_LOGIN",
+        });
+
+        messagesDataArray.push({
+          text: "Please enter your password",
+          by: "bot",
+          feedback_submitted: true,
+          feedback: "Yes",
+        });
+        chatSection.innerHTML = updateChat(messagesDataArray);
+        chatSection.scrollTop =
+          chatSection.scrollHeight - chatSection.clientHeight;
+
+        const email = document.querySelector('input[name="email"]');
+        email.value = message;
+        email.dispatchEvent(new Event("change", { bubbles: true }));
+        botTextarea.removeAttribute("readonly");
+        sendButtonIcon.style.display = "inline-flex";
+        messageBoxSpan.style.backgroundColor = "#620091";
+        sendButtonText.innerText = "Ask";
+        return;
+      }
+    } else if (
+      automationEvent?.command &&
+      automationEvent.command === "ENTER_PASSWORD_FOR_LOGIN"
+    ) {
+      const password = document.querySelector('input[name="password"]');
+      const submitButton = document.querySelector('button[form="loginForm"]');
+      password.value = message;
+      password.dispatchEvent(new Event("change", { bubbles: true }));
+      submitButton.click();
+      botTextarea.removeAttribute("readonly");
+      sendButtonIcon.style.display = "inline-flex";
+      messageBoxSpan.style.backgroundColor = "#620091";
+      sendButtonText.innerText = "Ask";
+      return;
+    }
+
+    messagesDataArray.push({
       text: "",
       by: "bot",
       feedback_submitted: true,
     });
 
-    chatSection.innerHTML = updateChat(defaultChatMessages);
+    chatSection.innerHTML = updateChat(messagesDataArray);
     chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
 
     const onFailureMessage =
@@ -690,15 +844,19 @@ const runScript = () => {
     let botResponseMessage = "";
     let jsonResponse = {};
     try {
-      const response = await fetch("http://localhost:5000/message-response", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: message,
-        }),
-      });
+      const response = await fetch(
+        // "http://3.96.250.183:5000/message-response",
+        "http://127.0.0.1:5000/message-response",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: message,
+          }),
+        }
+      );
 
       jsonResponse = await response.json();
       console.log(jsonResponse);
@@ -707,17 +865,60 @@ const runScript = () => {
       console.log(error);
     }
 
-    botTextarea.removeAttribute("readonly");
-    defaultChatMessages[defaultChatMessages.length - 1] = {
+    messagesDataArray[messagesDataArray.length - 1] = {
       text: botResponseMessage,
       by: "bot",
       feedback_submitted: !jsonResponse.status,
     };
+    botTextarea.removeAttribute("readonly");
     sendButtonIcon.style.display = "inline-flex";
     messageBoxSpan.style.backgroundColor = "#620091";
     sendButtonText.innerText = "Ask";
-    chatSection.innerHTML = updateChat(defaultChatMessages);
+    chatSection.innerHTML = updateChat(messagesDataArray);
     chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
+
+    setTimeout(() => {
+      const feedbackYes = document.querySelectorAll('div[id="feedbackYes"]');
+      const feedbackNo = document.querySelectorAll('div[id="feedbackNo"]');
+      const regenerateButton = document.querySelectorAll(
+        'div[id="regenerate"]'
+      );
+
+      if (feedbackYes) {
+        feedbackYes[feedbackYes.length - 1].addEventListener(
+          "click",
+          function (event) {
+            const index =
+              feedbackYes[feedbackYes.length - 1].getAttribute("data-index");
+            feedbackHandler(index, "Yes");
+          }
+        );
+      }
+
+      if (feedbackNo) {
+        feedbackNo[feedbackNo.length - 1].addEventListener(
+          "click",
+          function (event) {
+            const index =
+              feedbackNo[feedbackNo.length - 1].getAttribute("data-index");
+            feedbackHandler(index, "No");
+          }
+        );
+      }
+
+      if (regenerateButton) {
+        regenerateButton[regenerateButton.length - 1].addEventListener(
+          "click",
+          async function (event) {
+            const index =
+              regenerateButton[regenerateButton.length - 1].getAttribute(
+                "data-index"
+              );
+            await regenerateResponse(index);
+          }
+        );
+      }
+    }, 1000);
   };
 
   messageBoxSpan.addEventListener("click", handleUserMessageSubmit);
@@ -742,8 +943,30 @@ const runScript = () => {
       return;
     }
   });
+
+  chrome.storage.local.get("automationEvent", async function (result) {
+    console.log("Value retrieved:", result, result.automationEvent);
+    if (result.automationEvent === "LOGIN_EVENT") {
+      defaultExecuteMessages.length = 0;
+      defaultExecuteMessages.push({
+        text: "Please enter your email address",
+        by: "bot",
+        feedback_submitted: true,
+        feedback: "Yes",
+      });
+      chatSection.innerHTML = updateChat(defaultExecuteMessages);
+      tabChangeHandler("execute");
+      return botTriggerDiv.click();
+    }
+  });
 };
 
 setTimeout(() => {
-  return runScript();
-}, 1000);
+  try {
+    console.log(window);
+    console.log("DOMContentLoaded");
+    return runScript();
+  } catch (error) {
+    console.log("ERROR WHILE RUNNING SCRIPT: ", error);
+  }
+}, 3000);

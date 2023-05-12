@@ -121,5 +121,17 @@ def test_superpowered_ai():
     )
 
 
+def login_user(email, password, email_input_id, password_input_id, submit_button_id):
+    try:
+        email_input = f"document.getElementById({email_input_id}).value={email};"
+        password_input = (
+            f"document.getElementById({password_input_id}).value({password});"
+        )
+        submit_button = f"document.getElementById({submit_button_id}).click();"
+        return email_input + password_input + submit_button
+    except Exception as e:
+        print(e)
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000, debug=True)

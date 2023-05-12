@@ -7,7 +7,7 @@
     "16": "logo.png",
     "32": "logo.png"
   },
-  "permissions": ["tabs", "activeTab", "scripting"],
+  "permissions": ["storage"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [
     {
