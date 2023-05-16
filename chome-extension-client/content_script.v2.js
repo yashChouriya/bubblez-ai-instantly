@@ -1,4 +1,20 @@
 const runScript = () => {
+  console.log("extension loaded successfully", window.location);
+
+  const goToPattern = /go to/i;
+  const goToLoggedInMenuCommandPattern =
+    /go to\s+(accounts|campaigns|analytics|unibox|settings|accelerator)\b/i;
+
+  const goToLoggedOutMenuCommandPattern =
+    /go to\s+(home|pricing|about|reviews|warmup|blog)\b/i;
+
+  const addNewCampaignCommandPattern = /add new campaign/i;
+  const addEmailAccountCommandPattern = /add email account/i;
+
+  const sleep = (ms) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  };
+
   const chromeStorage = {
     get: (keys) => {
       return new Promise((resolve, reject) => {
@@ -37,459 +53,122 @@ const runScript = () => {
     },
   };
 
-  console.log("extension loaded successfully", window);
-
-  let globalStyles = `
-  .bot-icon-text-container{
-    width: 58px;
-    height: 70px;
-    padding-top: 10px;
-    position: fixed;
-    z-index: 10000000000000;
-    bottom: 20%;
-    right: 2%;
-    background-color: #620091;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  #bot-trigger-div {
-    width: 35px;
-    height: 35px;
-    margin: auto;
-    margin-bottom: 0.2rem;
-    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/dependabot-svgrepo-com.svg");
-    cursor: pointer;
-    background-repeat: no-repeat;
-    background-size: cover;
-
-  }
-
-  #bot-icon-text-container:hover {
-    width: 65px !important;
-    height: 75px !important;
-    animation-name: bounce;
-    -moz-animation-name: bounce;
-  }
-
-  @keyframes bounce {
-    0%,
-    100%,
-    20%,
-    50%,
-    80% {
-      -webkit-transform: translateY(0);
-      -ms-transform: translateY(0);
-      transform: translateY(0);
+  const insertValuesInInput = (selector, value) => {
+    try {
+      const inputElement = document.querySelector(selector);
+      const triggerInputEvent = new Event("input", { bubbles: true });
+      if (!inputElement) return false;
+      inputElement.value = value;
+      inputElement.dispatchEvent(triggerInputEvent);
+      return true;
+    } catch (error) {
+      return false;
     }
-    40% {
-      -webkit-transform: translateY(-30px);
-      -ms-transform: translateY(-30px);
-      transform: translateY(-30px);
+  };
+
+  const triggerClickOnElement = (selector) => {
+    try {
+      const element = document.querySelector(selector);
+      if (!element) return false;
+      element.click();
+      return true;
+    } catch (error) {
+      return false;
     }
-    60% {
-      -webkit-transform: translateY(-15px);
-      -ms-transform: translateY(-15px);
-      transform: translateY(-15px);
-    }
-  }
+  };
 
-  .bot-modal {
-    display: none;
-    position: fixed;
-    z-index: 10000000;
-    left: 50%;
-    top: 50%;
-    min-width: 800px;
-    transform: translate(-50%, -50%);
-    overflow-x: hidden;
-    overflow-y: auto;
-    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
-    padding: 15px;
-    border-radius: 16px;
-    font-family: "circular";
-    background-color: #fff;
-  }
+  const navigateOnInstantlyLoggedIn = (value) => {
+    const menus = document.querySelectorAll('[class="pro-item-content"]');
+    const baseUrl = "https://app.instantly.ai";
+    if (!menus) return false;
+    const menuMap = {
+      accounts: {
+        index: 0,
+        path: "/app/accounts",
+      },
+      campaigns: {
+        index: 1,
+        path: "/app/campaigns",
+      },
+      analytics: {
+        index: 2,
+        path: "/app/analytics/overview",
+      },
+      unibox: {
+        index: 3,
+        path: "/app/unibox",
+      },
+      settings: {
+        index: 4,
+        path: "/app/settings/profile",
+      },
+      accelerator: {
+        index: 5,
+        path: "/app/accelerator",
+      },
+    };
 
-  .bot-modal-dialog {
-    margin: auto;
-  }
-
-  .bot-modal-content {
-    position: relative;
-    background-color: #F9FAFB;
-    padding-bottom: 0.1rem;
-    border-radius: 8px;
-  }
-
-  .poweredByBubblez {
-    padding: 0.2rem 0.7rem;
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 12px;
-    line-height: 15px;
-  }
-
-  #closeButton {
-    cursor: pointer;
-    position: absolute;
-    right: 0.5%;
-    top: 1%;
-    color: black;
-    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/close-svgrepo-com.svg");
-    background-repeat: no-repeat;
-    background-size: cover;
-    width: 12px;
-    height: 12px;
-  }
-
-  .chat-section {
-    padding: 0.5rem;
-    max-height: 325px !important;
-    overflow-y: auto;
-    height: 325px;
-  }
-
-  .chat-section::-webkit-scrollbar {
-    width: 5px;
-  }
-
-  .chat-section::-webkit-scrollbar-track {
-    border-radius: 10px;
-    background-color: #cacaca;
-  }
-
-  .chat-section::-webkit-scrollbar-thumb {
-    border-radius: 10px;
-    background-color: #620091;
-  }
-
-  .chat-message-bot {
-    display: flex;
-    padding: 30px 25px;
-  }
-
-  .bot-icon-holder {
-    width: 40px;
-    height: 40px;
-    background-color: #EBECED;
-    border-radius: 50%;
-    position: relative;
-    margin-right: 1rem;
-    line-height: 19px;
-
-    .bot-svg {
-      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
-      width: 12px;
-      height: 12px;
-      background-repeat: no-repeat;
-      background-size: cover;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-    }
-  }
-
-  .bot-head-reply {
-    margin-top: 0.3rem;
-    color: #3f3f3f;
-    position: relative;
-    border-radius: 6px;
-    white-space: break-spaces;
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 19px;
-    display: flex;
-    align-items: center;
-    max-width: 85%;
-  }
-
-  .chat-message-human {
-    display: flex;
-    padding: 30px 25px;
-    flex-direction: row-reverse;
-    border-bottom: 0.5px solid #DDDFE2;
-    
-  }
-
-  .human-icon-holder {
-    width: 40px;
-    height: 40px;
-    background-color: #EBECED;
-    border-radius: 50%;
-    position: relative;
-    margin-left: 1rem;
-    
-    .human-svg {
-      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
-      width: 12px;
-      height: 12px;
-      background-repeat: no-repeat;
-      background-size: cover;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-    }
-  }
-
-  .human-head-reply {
-    font-size: 16px;
-    margin-top: 0.3rem;
-    color: #3f3f3f;
-    position: relative;
-    border-radius: 6px;
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 19px;
-    display: flex;
-    align-items: center;
-    max-width: 85%;
-  }
-
-  .messageBox {
-    margin: 5px !important;
-    padding: 0.5rem;
-    overflow: hidden;
-    width: 97%;
-    border-radius: 16px;
-    height: 45px;
-    position: relative;
-    background-color: #F8F9FB;
-    box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
-
-    .messageBoxTextArea {
-      margin: auto;
-      width: 88%;
-      border: none;
-      outline: none;
-      font-size: 1rem;
-      resize: none;
-      border-radius: 16px;
-      height: 40px;
-      padding: 0.5rem;
-      overflow-y: clip;
-      background-color: #F8F9FB;
-      font-family: 'Inter';
-      font-style: normal;
-      font-weight: 400;
-      font-size: 16px;
-      line-height: 19px;
-      color: #6C6C6C;
-
-    }
-    .messageBoxTextArea:focus {
-      outline: none;
-      border: none;
-    }
-
-    .messageBoxSpan {
-      position: absolute;
-      right: 1%;
-      background-color: #620091;
-      z-index: 100000;
-      font-weight: bold;
-      cursor: pointer;
-      padding: 5px 9px;
-      gap: 6px;
-
-      border-radius: 8px;
-      font-family: 'Inter';
-      font-style: normal;
-      font-weight: 400;
-      font-size: 16px;
-      line-height: 19px;
-      align-items: center;
-      color: #FFFFFF;
-
-      .send-arrow{
-        background-image: url('https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/upArrow.svg');
-        width: 12px;
-        height: 12px;
-        margin-right: 0.2rem;
-        display: inline-flex;
-      }
-
-
-    }
-
-    .messageBoxSpan-disabled {
-      position: absolute;
-      right: 3%;
-      top: 22%;
-      background-color: #767676;
-      color: white;
-      padding: 0.5rem 1rem;
-      font-size: 0.8rem;
-      z-index: 100000;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: not-allowed;
-    }
-
-    .messageBoxSpan:hover {
-      background-color: #620091;
-    }
-  }
-
-  .tabs {
-    display: flex;
-    justify-content: center;
-
-    .tab {
-      padding: 0.5rem 1rem;
-      margin: 0 0.3rem;
-      border-radius: 8px 8px 0px 0px;
-      background-color: #fff;
-      cursor: pointer;
-      transition: all 0.1s 0.1s ease-in-out;
-
-      .tab-icon{
-        width: 12px;
-        height: 12px;
-        margin-right: 0.2rem;
-        display: inline-flex;
-      }
-
-      .chat{
-        background-image: url('https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg');
-      }
-
-      .execute{
-        background-image: url('https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/gear.svg');
-      }
-
-      .tab-text{
-        font-family: 'Inter';
-        font-style: normal;
-        font-weight: 500;
-        font-size: 13px;
-        line-height: 16px;
-        vertical-align: text-top;
-      }
-    }
-
-    .tab.active{
-      background-color: #F9FAFB !important;
-      border-bottom: 2px solid #620091 !important;
-      transition: all 0.1s 0.1s ease-in-out;
-    }
-
-  }
-
-  .feedback-container{
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 12px;
-    line-height: 140%;
-    padding: 15px 80px;
-    .feedback-text{
-      margin-bottom: 0.5rem;
-    }
-
-    .feedback-button-container{
-      display: flex;
-
-      .feedback-buttons{
-        margin-right: 0.5rem;
-        color: #620091;
-        background: #FFFFFF;
-        border: 1px solid #DEDFE1;
-        border-radius: 8px;
-        padding: 6px 10px 4px 10px;
-        gap: 10px;
-        cursor: pointer;
-
-        .feedback-refresh-icon{
-          width: 12px;
-          height: 12px;
-          margin: 0.3rem;
+    let isNavigated = true;
+    for (const key in menuMap) {
+      if (value.toLowerCase().includes(key)) {
+        const index = menuMap[key].index;
+        const path = menuMap[key].path;
+        if (window.location.host !== "app.instantly.ai") {
+          window.location.href = `${baseUrl}${path}`;
+          isNavigated = true;
+          break;
+        } else {
+          const menuDiv = menus[index];
+          const menuATag = menuDiv.childNodes[0];
+          if (!menuATag) {
+            continue;
+          }
+          menuATag.click();
+          isNavigated = true;
+          break;
         }
       }
+      isNavigated = false;
     }
-  }
+    return isNavigated;
+  };
 
-  #commands-container{
-    position: absolute;
-    display: none;
-    bottom: 20%;
-    left: 1%;
+  const navigateOnInstantlyLoggedOut = (value) => {
+    const baseUrl = "https://instantly.ai";
+    const menuMap = {
+      home: "/",
+      pricing: "/pricing",
+      about: "/about",
+      reviews: "/review",
+      warmup: "/email-warmup",
+      blog: "/blog",
+    };
 
-    .command{
-      background: #E9EAEB;
-      cursor: pointer;
-      border-radius: 8px;
-      padding: 10px;
-      gap: 9px;
-      font-family: 'Inter';
-      font-style: normal;
-      font-weight: 500;
-      font-size: 13px;
-      line-height: 16px;
-      text-align: center;
-      color: #1E1E1E;
+    let isNavigated = true;
+    for (const key in menuMap) {
+      if (value.toLowerCase().includes(key)) {
+        const value = menuMap[key];
+        window.location.href = `${baseUrl}${value}`;
+        isNavigated = true;
+        break;
+      }
+      isNavigated = false;
     }
-  }
-`;
+    return isNavigated;
+  };
 
-  const loaderStyle = `
-  
-  .loader {
-    width: 15px;
-    height: 15px;
-    color: #620091;
-    background:
-      linear-gradient(currentColor 0 0),
-      linear-gradient(currentColor 0 0),
-      linear-gradient(currentColor 0 0),
-      linear-gradient(currentColor 0 0);
-    background-size: 8px 8px;
-    background-repeat:no-repeat;
-    animation: sh5 1.5s infinite cubic-bezier(0.3,1,0,1);
-    margin-left: 50%;
-    transform: translateX(-50%);
-  }
+  const clickAddNewButton = () => {
+    const addNewButton = document.querySelectorAll("button")[9];
+    addNewButton.click();
+  };
 
-  @keyframes sh5 {
-    0%   {background-position: 0    0,100% 0   ,100% 100%,0 100%}
-    33%  {background-position: 0    0,100% 0   ,100% 100%,0 100%;width:30px;height: 30px}
-    66%  {background-position: 100% 0,100% 100%,0    100%,0 0   ;width:30px;height: 30px}
-    100% {background-position: 100% 0,100% 100%,0    100%,0 0   }
-  }
-
-  .loader-container{
-    width: 100%;
-    height: 50px;
-
-  }
-  .loader-text{
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 400;
-    font-size: 12px;
-    line-height: 15px;
-    color: #676969;
-    width: 100%;
-    text-align: center;
-    padding-bottom: 1.5rem;
-    border-bottom: 0.5px solid #DDDFE2;
-  }
-  `;
-
-  globalStyles += loaderStyle;
-
-  // appending the styles to the root element
-  const style = document.createElement("style");
-  style.innerHTML = globalStyles;
-  document.head.appendChild(style);
+  const addCampaign = (campaignName) => {
+    insertValuesInInput(
+      'input[placeholder="Give your campaign a name"]',
+      campaignName
+    );
+    triggerClickOnElement('button[class="btn-lg btn btn-primary"]');
+  };
 
   const botPopupModel = `
   <div class="bot-modal-dialog bot-modal-dialog-centered">
@@ -720,20 +399,40 @@ const runScript = () => {
 
   chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
 
+  const handleLoading = (isEnable) => {
+    const botTextarea = document.getElementById("botTextarea");
+    const sendButtonIcon = document.getElementById("send-arrow");
+    const sendButtonText = document.getElementById("send-button-message");
+    if (isEnable) {
+      botTextarea.setAttribute("readonly", "true");
+      sendButtonIcon.style.display = "none";
+      messageBoxSpan.style.backgroundColor = "#CACCCC";
+      sendButtonText.innerText = "Generating";
+    } else {
+      botTextarea.removeAttribute("readonly");
+      sendButtonIcon.style.display = "inline-flex";
+      messageBoxSpan.style.backgroundColor = "#620091";
+      sendButtonText.innerText = "Ask";
+    }
+  };
+
+  const closeModal = () => {
+    const modal = document.getElementById("myBotModal");
+    modal.style.display = "none";
+  };
+
   const handleUserMessageSubmit = async () => {
     if (!botTextarea.value) return;
     const message = botTextarea.value;
     botTextarea.value = "";
-    botTextarea.setAttribute("readonly", "true");
-    const sendButtonIcon = document.getElementById("send-arrow");
-    const sendButtonText = document.getElementById("send-button-message");
-    sendButtonIcon.style.display = "none";
-    messageBoxSpan.style.backgroundColor = "#CACCCC";
-    sendButtonText.innerText = "Generating";
-    const messagesDataArray =
-      getActiveTab() === "chat" ? defaultChatMessages : defaultExecuteMessages;
+    handleLoading(true);
+    const isChatTabEnabled = getActiveTab() === "chat";
 
-    if (getActiveTab() !== "chat" && messagesDataArray.length === 1) {
+    const messagesDataArray = isChatTabEnabled
+      ? defaultChatMessages
+      : defaultExecuteMessages;
+
+    if (!isChatTabEnabled && messagesDataArray.length === 1) {
       commandsContainer.style.display = "flex";
     } else {
       commandsContainer.style.display = "none";
@@ -747,19 +446,129 @@ const runScript = () => {
     chatSection.innerHTML = updateChat(messagesDataArray);
     chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
 
-    if (getActiveTab() !== "chat" && defaultExecuteMessages.length === 1) {
-      commandsContainer.style.display = "flex";
-    } else {
-      commandsContainer.style.display = "none";
-    }
+    if (!isChatTabEnabled) {
+      if (message === "login") {
+        await chromeStorage.set({
+          automationEvent: "LOGIN_EVENT",
+          command: "ENTER_EMAIL_FOR_LOGIN",
+        });
+        window.location.href = "https://app.instantly.ai/auth/login";
+        return;
+      }
 
-    if (getActiveTab() !== "chat" && message === "login") {
-      await chromeStorage.set({
-        automationEvent: "LOGIN_EVENT",
-        command: "ENTER_EMAIL_FOR_LOGIN",
-      });
-      window.location.href = "https://app.instantly.ai/auth/login";
-      return;
+      if (goToPattern.test(message)) {
+        if (goToLoggedInMenuCommandPattern.test(message)) {
+          const isNavigated = navigateOnInstantlyLoggedIn(message);
+          if (isNavigated) {
+            messagesDataArray.push({
+              text: "Done",
+              by: "bot",
+              feedback_submitted: true,
+              feedback: "Yes",
+            });
+          } else {
+            messagesDataArray.push({
+              text: "Not able to navigate, Please try again",
+              by: "bot",
+              feedback_submitted: true,
+              feedback: "No",
+            });
+          }
+
+          handleLoading(false);
+          chatSection.innerHTML = updateChat(messagesDataArray);
+          chatSection.scrollTop =
+            chatSection.scrollHeight - chatSection.clientHeight;
+          return;
+        } else if (goToLoggedOutMenuCommandPattern.test(message)) {
+          const isNavigated = navigateOnInstantlyLoggedOut(message);
+          if (!isNavigated) {
+            messagesDataArray.push({
+              text: "Not able to navigate, Please try again",
+              by: "bot",
+              feedback_submitted: true,
+              feedback: "No",
+            });
+            handleLoading(false);
+            chatSection.innerHTML = updateChat(messagesDataArray);
+            chatSection.scrollTop =
+              chatSection.scrollHeight - chatSection.clientHeight;
+            return;
+          }
+        } else {
+          messagesDataArray.push({
+            text: "Not able to navigate, Please try again",
+            by: "bot",
+            feedback_submitted: true,
+            feedback: "No",
+          });
+          handleLoading(false);
+          chatSection.innerHTML = updateChat(messagesDataArray);
+          chatSection.scrollTop =
+            chatSection.scrollHeight - chatSection.clientHeight;
+          return;
+        }
+      }
+
+      if (
+        messagesDataArray.at(-2).text ===
+        "What will be the name of the campaign?"
+      ) {
+        addCampaign(message);
+        messagesDataArray.push({
+          text: "Campaign added successfully!",
+          by: "bot",
+          feedback_submitted: true,
+          feedback: "Yes",
+        });
+        chatSection.innerHTML = updateChat(messagesDataArray);
+        chatSection.scrollTop =
+          chatSection.scrollHeight - chatSection.clientHeight;
+        handleLoading(false);
+        closeModal();
+        return;
+      }
+
+      if (addNewCampaignCommandPattern.test(message)) {
+        if (!window.location.href.includes("campaigns")) {
+          navigateOnInstantlyLoggedIn("go to campaigns");
+          await sleep(500);
+        }
+        clickAddNewButton();
+        handleLoading(false);
+        messagesDataArray.push({
+          text: "What will be the name of the campaign?",
+          by: "bot",
+          feedback_submitted: true,
+          feedback: "Yes",
+        });
+
+        chatSection.innerHTML = updateChat(messagesDataArray);
+        chatSection.scrollTop =
+          chatSection.scrollHeight - chatSection.clientHeight;
+        return;
+      }
+
+      if (addEmailAccountCommandPattern.test(message)) {
+        if (!window.location.href.includes("accounts")) {
+          navigateOnInstantlyLoggedIn("go to accounts");
+          await sleep(500);
+        }
+        clickAddNewButton();
+        handleLoading(false);
+        messagesDataArray.push({
+          text: "Done",
+          by: "bot",
+          feedback_submitted: true,
+          feedback: "Yes",
+        });
+
+        chatSection.innerHTML = updateChat(messagesDataArray);
+        chatSection.scrollTop =
+          chatSection.scrollHeight - chatSection.clientHeight;
+        closeModal();
+        return;
+      }
     }
 
     const automationEvent = await chromeStorage.get([
@@ -783,11 +592,59 @@ const runScript = () => {
         chatSection.innerHTML = updateChat(messagesDataArray);
         chatSection.scrollTop =
           chatSection.scrollHeight - chatSection.clientHeight;
-        botTextarea.removeAttribute("readonly");
+        handleLoading(false);
+        return;
+      } else {
+        const isValueAdded = insertValuesInInput(
+          'input[name="email"]',
+          message
+        );
+        if (!isValueAdded) {
+          messagesDataArray.push({
+            text: "Something went wrong while doing login",
+            by: "bot",
+            feedback_submitted: true,
+            feedback: "Yes",
+          });
+        } else {
+          await chromeStorage.set({
+            automationEvent: "LOGIN_EVENT",
+            command: "ENTER_PASSWORD_FOR_LOGIN",
+          });
+
+          messagesDataArray.push({
+            text: "Please enter your password",
+            by: "bot",
+            feedback_submitted: true,
+            feedback: "Yes",
+          });
+        }
+
+        chatSection.innerHTML = updateChat(messagesDataArray);
+        chatSection.scrollTop =
+          chatSection.scrollHeight - chatSection.clientHeight;
+
+        if (isValueAdded) botTextarea.removeAttribute("readonly");
         sendButtonIcon.style.display = "inline-flex";
         messageBoxSpan.style.backgroundColor = "#620091";
         sendButtonText.innerText = "Ask";
         return;
+      }
+    } else if (
+      automationEvent?.command &&
+      automationEvent.command === "ENTER_PASSWORD_FOR_LOGIN"
+    ) {
+      const isValueAdded = insertValuesInInput(
+        'input[name="password"]',
+        message
+      );
+      if (!isValueAdded) {
+        messagesDataArray.push({
+          text: "Something went wrong while doing login",
+          by: "bot",
+          feedback_submitted: true,
+          feedback: "Yes",
+        });
       } else {
         await chromeStorage.set({
           automationEvent: "LOGIN_EVENT",
@@ -800,32 +657,20 @@ const runScript = () => {
           feedback_submitted: true,
           feedback: "Yes",
         });
-        chatSection.innerHTML = updateChat(messagesDataArray);
-        chatSection.scrollTop =
-          chatSection.scrollHeight - chatSection.clientHeight;
 
-        const email = document.querySelector('input[name="email"]');
-        email.value = message;
-        email.dispatchEvent(new Event("change", { bubbles: true }));
-        botTextarea.removeAttribute("readonly");
-        sendButtonIcon.style.display = "inline-flex";
-        messageBoxSpan.style.backgroundColor = "#620091";
-        sendButtonText.innerText = "Ask";
-        return;
+        await chromeStorage.remove(["automationEvent", "command"]);
+        const isClicked = triggerClickOnElement('button[form="loginForm"]');
+        if (!isClicked) {
+          messagesDataArray.push({
+            text: "Something went wrong while doing login",
+            by: "bot",
+            feedback_submitted: true,
+            feedback: "Yes",
+          });
+        }
       }
-    } else if (
-      automationEvent?.command &&
-      automationEvent.command === "ENTER_PASSWORD_FOR_LOGIN"
-    ) {
-      const password = document.querySelector('input[name="password"]');
-      const submitButton = document.querySelector('button[form="loginForm"]');
-      password.value = message;
-      password.dispatchEvent(new Event("change", { bubbles: true }));
-      submitButton.click();
-      botTextarea.removeAttribute("readonly");
-      sendButtonIcon.style.display = "inline-flex";
-      messageBoxSpan.style.backgroundColor = "#620091";
-      sendButtonText.innerText = "Ask";
+
+      handleLoading(false);
       return;
     }
 
@@ -845,8 +690,8 @@ const runScript = () => {
     let jsonResponse = {};
     try {
       const response = await fetch(
-        // "http://3.96.250.183:5000/message-response",
-        "http://127.0.0.1:5000/message-response",
+        "http://127.0.0.1:3000/message-response",
+        // "https://3.96.250.183/message-response",
         {
           method: "POST",
           headers: {
@@ -861,6 +706,14 @@ const runScript = () => {
       jsonResponse = await response.json();
       console.log(jsonResponse);
       botResponseMessage = jsonResponse?.result || onFailureMessage;
+      if (jsonResponse.status) {
+        const relativeUrls = jsonResponse.relative_urls;
+        let temp = "";
+        for (const urlData of relativeUrls) {
+          temp += `<a class="relativeUrl" href="${urlData.url}">${urlData.title}</a>`;
+        }
+        botResponseMessage += `<div style="display: inline-block;margin-top: 15px;"><p style="font-family: Inter;font-style: normal;font-weight: 500;font-size: 12px;color:black;">Verified Sources:</p><div style="display: flex;">${temp}</div></div>`;
+      }
     } catch (error) {
       console.log(error);
     }
@@ -870,10 +723,7 @@ const runScript = () => {
       by: "bot",
       feedback_submitted: !jsonResponse.status,
     };
-    botTextarea.removeAttribute("readonly");
-    sendButtonIcon.style.display = "inline-flex";
-    messageBoxSpan.style.backgroundColor = "#620091";
-    sendButtonText.innerText = "Ask";
+    handleLoading(false);
     chatSection.innerHTML = updateChat(messagesDataArray);
     chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
 
@@ -963,10 +813,9 @@ const runScript = () => {
 
 setTimeout(() => {
   try {
-    console.log(window);
     console.log("DOMContentLoaded");
     return runScript();
   } catch (error) {
     console.log("ERROR WHILE RUNNING SCRIPT: ", error);
   }
-}, 3000);
+}, 500);

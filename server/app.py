@@ -2,8 +2,12 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from celery import Celery
-import openai, requests, os, json, re
+import openai, requests, os, json, re, spacy
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+from heapq import nlargest
 
+nlp = spacy.load("en_core_web_md")
 
 app = Flask(__name__)
 CORS(app)
@@ -87,6 +91,25 @@ def get_all_knowledge_bases():
     return knowledge_base_ids
 
 
+def find_top_3_relative_sentences(paragraph, sentences, json_data):
+    model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
+
+    # Encode the paragraph and sentences into sentence embeddings
+    paragraph_embedding = model.encode([paragraph])[0]
+    sentence_embeddings = model.encode(sentences)
+
+    # Calculate the cosine similarity between the paragraph and sentences
+    similarities = cosine_similarity([paragraph_embedding], sentence_embeddings)[0]
+
+    # Find the top 3 most similar sentences based on similarity score
+    top_3_relative_indices = nlargest(
+        3, range(len(similarities)), key=lambda i: similarities[i]
+    )
+    top_3_relative_sentences = [json_data[index] for index in top_3_relative_indices]
+
+    return top_3_relative_sentences
+
+
 @app.route("/message-response", methods=["POST"])
 def test_superpowered_ai():
     prompt = request.json.get("prompt")
@@ -103,10 +126,19 @@ def test_superpowered_ai():
         json=request_payload,
     )
 
+    with open("instantlyFaqUrls.json", "r") as file:
+        json_data = json.load(file)
+        array_of_titles = [obj["title"] for obj in json_data]
+        top_three_relative_urls = find_top_3_relative_sentences(
+            prompt, array_of_titles, json_data
+        )
+        print(top_three_relative_urls)
+
     if response.status_code != 200:
         return jsonify(
             {
                 "result": "I'm sorry, I didn't quite understand your question. Can you please rephrase it or ask me something else?",
+                "relative_urls": top_three_relative_urls,
                 "status": False,
             }
         )
@@ -116,21 +148,10 @@ def test_superpowered_ai():
     return jsonify(
         {
             "result": clean_summary,
+            "relative_urls": top_three_relative_urls,
             "status": True,
         }
     )
-
-
-def login_user(email, password, email_input_id, password_input_id, submit_button_id):
-    try:
-        email_input = f"document.getElementById({email_input_id}).value={email};"
-        password_input = (
-            f"document.getElementById({password_input_id}).value({password});"
-        )
-        submit_button = f"document.getElementById({submit_button_id}).click();"
-        return email_input + password_input + submit_button
-    except Exception as e:
-        print(e)
 
 
 if __name__ == "__main__":

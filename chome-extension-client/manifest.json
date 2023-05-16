@@ -1,18 +1,19 @@
 {
   "name": "Permian-AI",
-  "version": "1.0",
-  "description": "Permian Extension for instantly website.",
+  "version": "1.1",
+  "description": "Permian-AI, a chat-bot extension for Instantly, powered by superpowered.ai, offers advanced AI support for seamless user experience.",
   "manifest_version": 3,
   "icons": {
     "16": "logo.png",
     "32": "logo.png"
   },
   "permissions": ["storage"],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["https://instantly.ai/*", "https://app.instantly.ai/*"],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://instantly.ai/*", "https://app.instantly.ai/*"],
       "js": ["content_script.v2.js"],
+      "css": ["styles.less"],
       "run_at": "document_idle",
       "all_frames": true
     }

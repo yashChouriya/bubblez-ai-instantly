@@ -1,0 +1,467 @@
+.bot-icon-text-container {
+  width: 58px;
+  height: 70px;
+  padding-top: 10px;
+  position: fixed;
+  z-index: 10000000000000;
+  bottom: 20%;
+  right: 2%;
+  background-color: #620091;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#bot-trigger-div {
+  width: 35px;
+  height: 35px;
+  margin: auto;
+  margin-bottom: 0.2rem;
+  background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/dependabot-svgrepo-com.svg");
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+#bot-icon-text-container:hover {
+  width: 65px !important;
+  height: 75px !important;
+  animation-name: bounce;
+  -moz-animation-name: bounce;
+}
+
+@keyframes bounce {
+  0%,
+  100%,
+  20%,
+  50%,
+  80% {
+    -webkit-transform: translateY(0);
+    -ms-transform: translateY(0);
+    transform: translateY(0);
+  }
+  40% {
+    -webkit-transform: translateY(-30px);
+    -ms-transform: translateY(-30px);
+    transform: translateY(-30px);
+  }
+  60% {
+    -webkit-transform: translateY(-15px);
+    -ms-transform: translateY(-15px);
+    transform: translateY(-15px);
+  }
+}
+
+.bot-modal {
+  display: none;
+  position: fixed;
+  z-index: 10000000;
+  left: 50%;
+  top: 50%;
+  min-width: 800px;
+  transform: translate(-50%, -50%);
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  padding: 15px;
+  border-radius: 16px;
+  font-family: "circular";
+  background-color: #fff;
+}
+
+.bot-modal-dialog {
+  margin: auto;
+}
+
+.bot-modal-content {
+  position: relative;
+  background-color: #f9fafb;
+  padding-bottom: 0.1rem;
+  border-radius: 8px;
+}
+
+.poweredByBubblez {
+  padding: 0.2rem 0.7rem;
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+#closeButton {
+  cursor: pointer;
+  position: absolute;
+  right: 0.5%;
+  top: 1%;
+  color: black;
+  background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/close-svgrepo-com.svg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  width: 12px;
+  height: 12px;
+}
+
+.chat-section {
+  padding: 0.5rem;
+  max-height: 325px !important;
+  overflow-y: auto;
+  height: 325px;
+}
+
+.chat-section::-webkit-scrollbar {
+  width: 5px;
+}
+
+.chat-section::-webkit-scrollbar-track {
+  border-radius: 10px;
+  background-color: #cacaca;
+}
+
+.chat-section::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background-color: #620091;
+}
+
+.chat-message-bot {
+  display: flex;
+  padding: 30px 25px;
+}
+
+.bot-icon-holder {
+  width: 40px;
+  height: 40px;
+  background-color: #ebeced;
+  border-radius: 50%;
+  position: relative;
+  margin-right: 1rem;
+  line-height: 19px;
+
+  .bot-svg {
+    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
+    width: 12px;
+    height: 12px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.bot-head-reply {
+  margin-top: 0.3rem;
+  color: #3f3f3f;
+  position: relative;
+  border-radius: 6px;
+  white-space: pre-line;
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  // display: flex;
+  align-items: center;
+  max-width: 85%;
+}
+
+.chat-message-human {
+  display: flex;
+  padding: 30px 25px;
+  flex-direction: row-reverse;
+  border-bottom: 0.5px solid #dddfe2;
+}
+
+.human-icon-holder {
+  width: 40px;
+  height: 40px;
+  background-color: #ebeced;
+  border-radius: 50%;
+  position: relative;
+  margin-left: 1rem;
+
+  .human-svg {
+    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
+    width: 12px;
+    height: 12px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.human-head-reply {
+  font-size: 16px;
+  margin-top: 0.3rem;
+  color: #3f3f3f;
+  position: relative;
+  border-radius: 6px;
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  display: flex;
+  align-items: center;
+  max-width: 85%;
+}
+
+.messageBox {
+  margin: 5px !important;
+  padding: 0.5rem;
+  overflow: hidden;
+  width: 97%;
+  border-radius: 16px;
+  height: 45px;
+  position: relative;
+  background-color: #f8f9fb;
+  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+
+  .messageBoxTextArea {
+    margin: auto;
+    width: 88%;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    resize: none;
+    border-radius: 16px;
+    height: 40px;
+    padding: 0.5rem;
+    overflow-y: clip;
+    background-color: #f8f9fb;
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 19px;
+    color: #6c6c6c;
+  }
+  .messageBoxTextArea:focus {
+    outline: none;
+    border: none;
+  }
+
+  .messageBoxSpan {
+    position: absolute;
+    right: 1%;
+    background-color: #620091;
+    z-index: 100000;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px 9px;
+    gap: 6px;
+
+    border-radius: 8px;
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 19px;
+    align-items: center;
+    color: #ffffff;
+
+    .send-arrow {
+      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/upArrow.svg");
+      width: 12px;
+      height: 12px;
+      margin-right: 0.2rem;
+      display: inline-flex;
+    }
+  }
+
+  .messageBoxSpan-disabled {
+    position: absolute;
+    right: 3%;
+    top: 22%;
+    background-color: #767676;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    z-index: 100000;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: not-allowed;
+  }
+
+  .messageBoxSpan:hover {
+    background-color: #620091;
+  }
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+
+  .tab {
+    padding: 0.5rem 1rem;
+    margin: 0 0.3rem;
+    border-radius: 8px 8px 0px 0px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.1s 0.1s ease-in-out;
+
+    .tab-icon {
+      width: 12px;
+      height: 12px;
+      margin-right: 0.2rem;
+      display: inline-flex;
+    }
+
+    .chat {
+      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
+    }
+
+    .execute {
+      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/gear.svg");
+    }
+
+    .tab-text {
+      font-family: "Inter";
+      font-style: normal;
+      font-weight: 500;
+      font-size: 13px;
+      line-height: 16px;
+      vertical-align: text-top;
+    }
+  }
+
+  .tab.active {
+    background-color: #f9fafb !important;
+    border-bottom: 2px solid #620091 !important;
+    transition: all 0.1s 0.1s ease-in-out;
+  }
+}
+
+.feedback-container {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 140%;
+  padding: 15px 80px;
+  .feedback-text {
+    margin-bottom: 0.5rem;
+  }
+
+  .feedback-button-container {
+    display: flex;
+
+    .feedback-buttons {
+      margin-right: 0.5rem;
+      color: #620091;
+      background: #ffffff;
+      border: 1px solid #dedfe1;
+      border-radius: 8px;
+      padding: 6px 10px 4px 10px;
+      gap: 10px;
+      cursor: pointer;
+
+      .feedback-refresh-icon {
+        width: 12px;
+        height: 12px;
+        margin: 0.3rem;
+      }
+    }
+  }
+}
+
+#commands-container {
+  position: absolute;
+  display: none;
+  bottom: 20%;
+  left: 1%;
+
+  .command {
+    background: #e9eaeb;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 10px;
+    gap: 9px;
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 16px;
+    text-align: center;
+    color: #1e1e1e;
+  }
+}
+
+.loader {
+  width: 15px;
+  height: 15px;
+  color: #620091;
+  background: linear-gradient(currentColor 0 0),
+    linear-gradient(currentColor 0 0), linear-gradient(currentColor 0 0),
+    linear-gradient(currentColor 0 0);
+  background-size: 8px 8px;
+  background-repeat: no-repeat;
+  animation: sh5 1.5s infinite cubic-bezier(0.3, 1, 0, 1);
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+@keyframes sh5 {
+  0% {
+    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  }
+  33% {
+    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+    width: 30px;
+    height: 30px;
+  }
+  66% {
+    background-position: 100% 0, 100% 100%, 0 100%, 0 0;
+    width: 30px;
+    height: 30px;
+  }
+  100% {
+    background-position: 100% 0, 100% 100%, 0 100%, 0 0;
+  }
+}
+
+.loader-container {
+  width: 100%;
+  height: 50px;
+}
+.loader-text {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #676969;
+  width: 100%;
+  text-align: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 0.5px solid #dddfe2;
+}
+
+.relativeUrl {
+  padding: 6px 8px;
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 10px;
+  margin: 5px;
+  background-color: lightgrey;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  color: black;
+  display: flow-root;
+}
+
+.relativeUrl:hover {
+  color: rgb(61, 61, 255) !important;
+  text-decoration: underline !important;
+}
