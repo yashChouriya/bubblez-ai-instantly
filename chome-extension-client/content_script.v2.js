@@ -173,22 +173,17 @@ const runScript = () => {
   const botPopupModel = `
   <div class="bot-modal-dialog bot-modal-dialog-centered">
     <div style="position:relative;">
-      <span id="closeButton"></span>
+      <span id="hamburgerMenu"></span>
       <div class="tabs" id="tabs">
         <div class="tab active" id="chatTab">
-          <span class="tab-icon chat"></span>
           <span class="tab-text">Chat</span>
         </div>
         <div class="tab" id="executeTab">
-          <span class="tab-icon execute"></span>
           <span class="tab-text">Execute</span>
         </div>
       </div>
       <div class="bot-modal-content">
         <div class="chat-section" id="chat-section"></div>
-        <div id="commands-container" onclick="window.location.href='https://app.instantly.ai/auth/login'">
-            <div class="command">Login</div>
-        </div>
         <div class="messageBox">
           <textarea
             class="messageBoxTextArea"
@@ -198,7 +193,7 @@ const runScript = () => {
           ></textarea>
           <span class="messageBoxSpan" id="messageBoxSend">
             <span class="send-arrow" id="send-arrow"></span>
-            <span id="send-button-message">Ask</span>
+            <span id="send-button-message"></span>
           </span>
         </div>
         <div class="poweredByBubblez">
@@ -254,8 +249,14 @@ const runScript = () => {
 
   botTriggerDiv.addEventListener("click", () => {
     const modal = document.getElementById("myBotModal");
-    modal.style.display = "block";
-    modal.style.opacity = "1";
+    if (modal.style.display === "none" || !modal.style.display) {
+      modal.style.display = "block";
+      modal.style.opacity = "1";
+      return true;
+    }
+    modal.style.display = "none";
+    modal.style.opacity = "0";
+    return false;
   });
 
   let popupModal = document.createElement("div");
@@ -270,7 +271,7 @@ const runScript = () => {
 
   const executeTab = document.getElementById("executeTab");
   const chatTab = document.getElementById("chatTab");
-  const commandsContainer = document.getElementById("commands-container");
+  // const commandsContainer = document.getElementById("commands-container");
   const chatSection = document.getElementById("chat-section");
   const botTextarea = document.getElementById("botTextarea");
   const messageBoxSpan = document.getElementById("messageBoxSend");
@@ -314,14 +315,14 @@ const runScript = () => {
     if (tabName === "chat") {
       chatTab.setAttribute("class", "tab active");
       executeTab.setAttribute("class", "tab");
-      commandsContainer.style.display = "none";
+      // commandsContainer.style.display = "none";
       chatSection.innerHTML = updateChat(defaultChatMessages);
     } else {
       chatTab.setAttribute("class", "tab");
       executeTab.setAttribute("class", "tab active");
-      if (defaultExecuteMessages.length === 1) {
-        commandsContainer.style.display = "flex";
-      }
+      // if (defaultExecuteMessages.length === 1) {
+      //   commandsContainer.style.display = "flex";
+      // }
       chatSection.innerHTML = updateChat(defaultExecuteMessages);
     }
 
@@ -337,11 +338,11 @@ const runScript = () => {
 
   // tab change logic end
 
-  const closePopupButton = document.getElementById("closeButton");
-  closePopupButton.addEventListener("click", () => {
-    const modal = document.getElementById("myBotModal");
-    modal.style.display = "none";
-  });
+  // const closePopupButton = document.getElementById("closeButton");
+  // closePopupButton.addEventListener("click", () => {
+  //   const modal = document.getElementById("myBotModal");
+  //   modal.style.display = "none";
+  // });
 
   const updateChat = (chatData) => {
     let chatSectionInnerHtml = "";
@@ -349,14 +350,22 @@ const runScript = () => {
       const showFeedback = message.by === "bot" && !message?.feedback_submitted;
 
       const feedbackDiv = `
-      <div class="feedback-container" style="flex-direction: column;" data-index="${index}">
-        <div class="feedback-text">Was this response helpful?</div>
+      <div data-index="${index}">
+        <div class="chat-message-bot">
+            <div class="bot-icon-holder">
+              <div class="bot-svg"></div>
+            </div>
+            <div class="bot-head-reply">
+              <div class="inner-chat-text bot-text-align">Was this response helpful?</div>
+            </div>
+            
+        </div>
         <div class="feedback-button-container">
           <div class="feedback-buttons" data-index="${index}" id="feedbackYes">Yes</div>
           <div class="feedback-buttons" data-index="${index}" id="feedbackNo">No</div>
           <div class="feedback-buttons" data-index="${index}" id="regenerate">
-            <img src="https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/reload.svg"></img>
             <span>Regenerate response</span>
+            <img style="margin: 0.2rem;" src="https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/reload.svg"></img>
           </div>
         </div>
       </div>
@@ -369,12 +378,15 @@ const runScript = () => {
               <div class="${message.by}-icon-holder">
                 <div class="${message.by}-svg"></div>
               </div>
-              <div class="${message.by}-head-reply">${message.text}</div>
+              <div class="${message.by}-head-reply">
+                <div class="inner-chat-text ${message.by}-text-align">${
+          message.text
+        }</div>
+              </div>
           </div>
           <div style="display:${
             showFeedback ? "inherit" : "none"
           }">${feedbackDiv}</div>
-          <div style="border-bottom: 0.5px solid #DDDFE2;"></div>
         </div>
         `;
       } else {
@@ -407,12 +419,12 @@ const runScript = () => {
       botTextarea.setAttribute("readonly", "true");
       sendButtonIcon.style.display = "none";
       messageBoxSpan.style.backgroundColor = "#CACCCC";
-      sendButtonText.innerText = "Generating";
+      // sendButtonText.innerText = "Generating";
     } else {
       botTextarea.removeAttribute("readonly");
       sendButtonIcon.style.display = "inline-flex";
       messageBoxSpan.style.backgroundColor = "#620091";
-      sendButtonText.innerText = "Ask";
+      sendButtonText.innerText = "";
     }
   };
 
@@ -432,11 +444,11 @@ const runScript = () => {
       ? defaultChatMessages
       : defaultExecuteMessages;
 
-    if (!isChatTabEnabled && messagesDataArray.length === 1) {
-      commandsContainer.style.display = "flex";
-    } else {
-      commandsContainer.style.display = "none";
-    }
+    // if (!isChatTabEnabled && messagesDataArray.length === 1) {
+    //   commandsContainer.style.display = "flex";
+    // } else {
+    //   commandsContainer.style.display = "none";
+    // }
 
     messagesDataArray.push({
       text: message,
@@ -627,7 +639,7 @@ const runScript = () => {
         if (isValueAdded) botTextarea.removeAttribute("readonly");
         sendButtonIcon.style.display = "inline-flex";
         messageBoxSpan.style.backgroundColor = "#620091";
-        sendButtonText.innerText = "Ask";
+        sendButtonText.innerText = "";
         return;
       }
     } else if (
@@ -690,7 +702,7 @@ const runScript = () => {
     let jsonResponse = {};
     try {
       const response = await fetch(
-        "http://127.0.0.1:3000/message-response",
+        "http://127.0.0.1:5000/message-response",
         // "https://3.96.250.183/message-response",
         {
           method: "POST",
@@ -712,7 +724,7 @@ const runScript = () => {
         for (const urlData of relativeUrls) {
           temp += `<a class="relativeUrl" href="${urlData.url}">${urlData.title}</a>`;
         }
-        botResponseMessage += `<div style="display: inline-block;margin-top: 15px;"><p style="font-family: Inter;font-style: normal;font-weight: 500;font-size: 12px;color:black;">Verified Sources:</p><div style="display: flex;">${temp}</div></div>`;
+        botResponseMessage += `<div style="display: inline-block;margin-top: 15px;"><p style="font-family: Inter;font-style: normal;font-weight: 500;font-size: 12px;color:black;">Verified Sources:</p><div>${temp}</div></div>`;
       }
     } catch (error) {
       console.log(error);

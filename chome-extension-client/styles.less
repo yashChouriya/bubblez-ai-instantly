@@ -1,3 +1,5 @@
+@import url("https://fonts.cdnfonts.com/css/inter");
+
 .bot-icon-text-container {
   width: 58px;
   height: 70px;
@@ -54,18 +56,20 @@
 .bot-modal {
   display: none;
   position: fixed;
-  z-index: 10000000;
-  left: 50%;
-  top: 50%;
-  min-width: 800px;
-  transform: translate(-50%, -50%);
+  z-index: 100000000000000;
+  left: 98%;
+  top: 15%;
+  transform: translate(-99%, -15%);
+  width: 362px;
+  height: 686px;
   overflow-x: hidden;
   overflow-y: auto;
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
-  padding: 15px;
+  padding: 15px 15px 5px 15px;
   border-radius: 16px;
-  font-family: "circular";
+  font-family: "inter";
   background-color: #fff;
+  transition: opacity 0.5s ease-in-out;
 }
 
 .bot-modal-dialog {
@@ -74,72 +78,78 @@
 
 .bot-modal-content {
   position: relative;
-  background-color: #f9fafb;
+  background-color: #fff;
   padding-bottom: 0.1rem;
   border-radius: 8px;
+  margin-top: 0.5rem;
 }
 
 .poweredByBubblez {
-  padding: 0.2rem 0.7rem;
-  font-family: "Inter";
+  font-family: "inter";
   font-style: normal;
-  font-weight: 500;
+  font-weight: 400;
   font-size: 12px;
   line-height: 15px;
+  padding: 0;
+  margin-top: 0.7rem;
+  text-align: center;
 }
 
-#closeButton {
+#hamburgerMenu {
   cursor: pointer;
   position: absolute;
   right: 0.5%;
   top: 1%;
-  color: black;
-  background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/close-svgrepo-com.svg");
+  background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/hamburgerMenu.svg");
   background-repeat: no-repeat;
   background-size: cover;
-  width: 12px;
-  height: 12px;
+  width: 24px;
+  height: 24px;
 }
 
 .chat-section {
   padding: 0.5rem;
-  max-height: 325px !important;
   overflow-y: auto;
-  height: 325px;
+  overflow-x: clip;
+  height: 540px;
+  padding-top: 5px;
 }
 
 .chat-section::-webkit-scrollbar {
-  width: 5px;
+  width: 1px;
 }
 
 .chat-section::-webkit-scrollbar-track {
   border-radius: 10px;
-  background-color: #cacaca;
+  background-color: #ffffff;
 }
 
 .chat-section::-webkit-scrollbar-thumb {
   border-radius: 10px;
-  background-color: #620091;
+  background-color: #63009100;
 }
 
 .chat-message-bot {
   display: flex;
-  padding: 30px 25px;
+  width: 100%;
+  padding: 10px 0;
 }
 
 .bot-icon-holder {
-  width: 40px;
+  width: 18%;
+  min-width: 40px;
+  max-width: 40px;
   height: 40px;
   background-color: #ebeced;
   border-radius: 50%;
   position: relative;
-  margin-right: 1rem;
+  margin-right: 0.5rem;
   line-height: 19px;
 
   .bot-svg {
-    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
-    width: 12px;
-    height: 12px;
+    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/p.svg");
+    width: 22px;
+    height: 22px;
     background-repeat: no-repeat;
     background-size: cover;
     position: absolute;
@@ -149,41 +159,57 @@
   }
 }
 
+.inner-chat-text {
+  width: fit-content;
+  height: fit-content;
+  background-color: #8000801a;
+  padding: 5px 10px;
+  border-radius: 8px;
+  line-height: 150%;
+  white-space: pre-line;
+  font-family: "inter";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 15px;
+  color: #1e1e1e;
+  max-width: 270px;
+}
+
+.bot-text-align {
+  margin-left: 0;
+}
+
+.human-text-align {
+  margin-right: 0;
+}
+
 .bot-head-reply {
   margin-top: 0.3rem;
-  color: #3f3f3f;
   position: relative;
-  border-radius: 6px;
-  white-space: pre-line;
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 19px;
-  // display: flex;
-  align-items: center;
-  max-width: 85%;
+  width: 270px;
 }
 
 .chat-message-human {
   display: flex;
-  padding: 30px 25px;
   flex-direction: row-reverse;
-  border-bottom: 0.5px solid #dddfe2;
+  width: 100%;
+  padding: 10px 0;
 }
 
 .human-icon-holder {
-  width: 40px;
+  width: 18%;
+  min-width: 40px;
+  max-width: 40px;
   height: 40px;
   background-color: #ebeced;
   border-radius: 50%;
   position: relative;
-  margin-left: 1rem;
+  margin-left: 0.5rem;
 
   .human-svg {
-    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
-    width: 12px;
-    height: 12px;
+    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/avatar.svg");
+    width: 22px;
+    height: 22px;
     background-repeat: no-repeat;
     background-size: cover;
     position: absolute;
@@ -194,82 +220,62 @@
 }
 
 .human-head-reply {
-  font-size: 16px;
   margin-top: 0.3rem;
-  color: #3f3f3f;
   position: relative;
-  border-radius: 6px;
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 19px;
+  width: 270px;
   display: flex;
-  align-items: center;
-  max-width: 85%;
+  justify-content: end;
 }
 
 .messageBox {
   margin: 5px !important;
-  padding: 0.5rem;
   overflow: hidden;
-  width: 97%;
-  border-radius: 16px;
-  height: 45px;
+  width: 330px;
+  height: 36px;
   position: relative;
-  background-color: #f8f9fb;
-  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #eaecec;
+  border-radius: 24px;
 
   .messageBoxTextArea {
-    margin: auto;
-    width: 88%;
-    border: none;
     outline: none;
-    font-size: 1rem;
-    resize: none;
-    border-radius: 16px;
-    height: 40px;
-    padding: 0.5rem;
-    overflow-y: clip;
-    background-color: #f8f9fb;
+    border: none;
     font-family: "Inter";
     font-style: normal;
     font-weight: 400;
-    font-size: 16px;
-    line-height: 19px;
-    color: #6c6c6c;
+    font-size: 14px;
+    line-height: 18px;
+    color: rgb(30 30 30 / 67%);
+    width: 300px;
+    height: 34px;
+    margin: auto;
+    resize: none;
+    padding: 8px 8px 5px 15px;
+    overflow: hidden;
   }
+
   .messageBoxTextArea:focus {
     outline: none;
     border: none;
   }
 
   .messageBoxSpan {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-block;
     position: absolute;
     right: 1%;
-    background-color: #620091;
-    z-index: 100000;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 5px 9px;
-    gap: 6px;
-
-    border-radius: 8px;
-    font-family: "Inter";
-    font-style: normal;
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 19px;
-    align-items: center;
-    color: #ffffff;
+    background: #620091;
+    top: 10%;
 
     .send-arrow {
-      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/upArrow.svg");
+      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/send.svg");
       width: 12px;
       height: 12px;
-      margin-right: 0.2rem;
       display: inline-flex;
+      background-repeat: no-repeat;
+      margin: 0.5rem;
     }
   }
 
@@ -295,14 +301,21 @@
 .tabs {
   display: flex;
   justify-content: center;
+  width: fit-content;
+  height: fit-content;
+  background: #620091;
+  border-radius: 24px;
+  padding: 0.3rem;
+  margin: auto;
 
   .tab {
-    padding: 0.5rem 1rem;
-    margin: 0 0.3rem;
-    border-radius: 8px 8px 0px 0px;
-    background-color: #fff;
+    border-radius: 24px;
     cursor: pointer;
     transition: all 0.1s 0.1s ease-in-out;
+    height: 30px !important;
+    padding: 5px 15px;
+    background-color: #620091 !important;
+    color: #ffffff !important;
 
     .tab-icon {
       width: 12px;
@@ -310,61 +323,48 @@
       margin-right: 0.2rem;
       display: inline-flex;
     }
+  }
 
-    .chat {
-      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/chat.svg");
-    }
-
-    .execute {
-      background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/gear.svg");
-    }
-
-    .tab-text {
-      font-family: "Inter";
-      font-style: normal;
-      font-weight: 500;
-      font-size: 13px;
-      line-height: 16px;
-      vertical-align: text-top;
-    }
+  .tab-text {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 500;
+    vertical-align: text-top;
+    font-size: 14px;
+    line-height: 18px;
+    display: flex;
+    align-items: center;
   }
 
   .tab.active {
-    background-color: #f9fafb !important;
-    border-bottom: 2px solid #620091 !important;
+    background-color: #ffffff !important;
+    color: #620091 !important;
     transition: all 0.1s 0.1s ease-in-out;
   }
 }
 
-.feedback-container {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 140%;
-  padding: 15px 80px;
-  .feedback-text {
-    margin-bottom: 0.5rem;
-  }
+.feedback-button-container {
+  display: flex;
+  margin-left: 3rem;
 
-  .feedback-button-container {
-    display: flex;
+  .feedback-buttons {
+    background: #ffffff;
+    border: 1px solid #eaecec;
+    border-radius: 8px;
+    padding: 6px 10px;
+    gap: 10px;
+    cursor: pointer;
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 140%;
+    color: #3f4a5c;
+    height: 28px;
+    margin-right: 0.5rem;
 
-    .feedback-buttons {
-      margin-right: 0.5rem;
-      color: #620091;
-      background: #ffffff;
-      border: 1px solid #dedfe1;
-      border-radius: 8px;
-      padding: 6px 10px 4px 10px;
-      gap: 10px;
-      cursor: pointer;
-
-      .feedback-refresh-icon {
-        width: 12px;
-        height: 12px;
-        margin: 0.3rem;
-      }
+    img {
+      margin-left: 0.2rem;
     }
   }
 }
@@ -442,26 +442,27 @@
 }
 
 .relativeUrl {
-  padding: 6px 8px;
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 400;
-  font-size: 10px;
-  margin: 5px;
-  background-color: lightgrey;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  border-radius: 8px;
+  margin-right: 0.5rem;
+  color: rgb(98, 0, 145);
   cursor: pointer;
+  background: rgb(255, 255, 255);
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgb(222, 223, 225);
+  border-image: initial;
+  border-radius: 8px;
+  padding: 6px 10px 4px;
+  color: #1e1e1e;
+  font-size: 12px;
+  width: 250px;
   white-space: nowrap;
-  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-decoration: none;
-  color: black;
-  display: flow-root;
+  display: block;
+  margin-bottom: 0.3rem;
 }
 
 .relativeUrl:hover {
-  color: rgb(61, 61, 255) !important;
+  color: #1e1e1e;
   text-decoration: underline !important;
 }
