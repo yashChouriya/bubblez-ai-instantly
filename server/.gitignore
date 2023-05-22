@@ -6,3 +6,5 @@ __pycache__/
 *.py[cod]
 env/
 .reload.sh
+migrations/
+client_secret.json
