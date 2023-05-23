@@ -41,18 +41,22 @@ function_data = [
     {
         "function_name": "login(args)",
         "description": "handles the login of the user to the website",
+        "url": "https://app.instantly.ai/auth/login",
     },
     {
         "function_name": "logout()",
         "description": "logs out the currently logged-in user",
+        "url": "https://app.instantly.ai/app/accounts",
     },
     {
         "function_name": "create_user()",
         "description": "creates or signup a new user account",
+        "url": "https://app.instantly.ai/auth/login",
     },
     {
         "function_name": "create_campaign(args)",
         "description": "creates a new campaign",
+        "url": "https://app.instantly.ai/app/accounts",
     },
 ]
 
@@ -77,12 +81,14 @@ def find_executable_function(user_query, args):
         matched_description = search_results["hits"]["hits"][0]["_source"][
             "description"
         ]
+        matched_url = search_results["hits"]["hits"][0]["_source"]["url"]
         print(f"Matched function: {matched_function}")
         print(f"Description: {matched_description}")
 
         function_with_args = matched_function.replace("args)", "")
 
         for arg in args:
+            arg = str(arg).strip()
             function_with_args += f"'{arg}',"
 
         if function_with_args[-1] == ",":
@@ -93,6 +99,7 @@ def find_executable_function(user_query, args):
         return {
             "function_name": matched_function.replace("()", ""),
             "function_with_args": function_with_args,
+            "matched_url": matched_url,
         }
     else:
         print("No matching function found.")

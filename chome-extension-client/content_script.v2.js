@@ -465,110 +465,30 @@ const runScript = () => {
     chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
 
     if (!isChatTabEnabled) {
-      if (message.includes("login")) {
-        // const args_ = message.split(",");
-
-        // await fetch("http://127.0.0.1:5000/message-response", {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //   },
-        //   body: JSON.stringify({
-        //     prompt: message,
-        //   }),
-        // });
-
+      try {
+        const argArray = message.split(",");
+        const query = argArray[0];
+        argArray.splice(0, 1);
+        const result = await fetch("http://127.0.0.1:5000/find-function", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: query,
+            args: argArray,
+          }),
+        });
+        const resultJson = await result.json();
         await chromeStorage.set({
-          automationEvent: "LOGIN_EVENT",
-          command: "ENTER_EMAIL_FOR_LOGIN",
-          args: args_,
+          command: resultJson.data,
         });
-        window.location.href = "https://app.instantly.ai/auth/login";
+
+        window.location.href = resultJson.data.matched_url;
         return;
-      }
-
-      if (goToPattern.test(message)) {
-        if (goToLoggedInMenuCommandPattern.test(message)) {
-          const isNavigated = navigateOnInstantlyLoggedIn(message);
-          if (isNavigated) {
-            messagesDataArray.push({
-              text: "Done",
-              by: "bot",
-              feedback_submitted: true,
-              feedback: "Yes",
-            });
-          } else {
-            messagesDataArray.push({
-              text: "Not able to navigate, Please try again",
-              by: "bot",
-              feedback_submitted: true,
-              feedback: "No",
-            });
-          }
-
-          handleLoading(false);
-          chatSection.innerHTML = updateChat(messagesDataArray);
-          chatSection.scrollTop =
-            chatSection.scrollHeight - chatSection.clientHeight;
-          return;
-        } else if (goToLoggedOutMenuCommandPattern.test(message)) {
-          const isNavigated = navigateOnInstantlyLoggedOut(message);
-          if (!isNavigated) {
-            messagesDataArray.push({
-              text: "Not able to navigate, Please try again",
-              by: "bot",
-              feedback_submitted: true,
-              feedback: "No",
-            });
-            handleLoading(false);
-            chatSection.innerHTML = updateChat(messagesDataArray);
-            chatSection.scrollTop =
-              chatSection.scrollHeight - chatSection.clientHeight;
-            return;
-          }
-        } else {
-          messagesDataArray.push({
-            text: "Not able to navigate, Please try again",
-            by: "bot",
-            feedback_submitted: true,
-            feedback: "No",
-          });
-          handleLoading(false);
-          chatSection.innerHTML = updateChat(messagesDataArray);
-          chatSection.scrollTop =
-            chatSection.scrollHeight - chatSection.clientHeight;
-          return;
-        }
-      }
-
-      if (
-        messagesDataArray.at(-2).text ===
-        "What will be the name of the campaign?"
-      ) {
-        addCampaign(message);
+      } catch (error) {
         messagesDataArray.push({
-          text: "Campaign added successfully!",
-          by: "bot",
-          feedback_submitted: true,
-          feedback: "Yes",
-        });
-        chatSection.innerHTML = updateChat(messagesDataArray);
-        chatSection.scrollTop =
-          chatSection.scrollHeight - chatSection.clientHeight;
-        handleLoading(false);
-        closeModal();
-        return;
-      }
-
-      if (addNewCampaignCommandPattern.test(message)) {
-        if (!window.location.href.includes("campaigns")) {
-          navigateOnInstantlyLoggedIn("go to campaigns");
-          await sleep(500);
-        }
-        clickAddNewButton();
-        handleLoading(false);
-        messagesDataArray.push({
-          text: "What will be the name of the campaign?",
+          text: "Sorry, I don't have capability to do that at the moment?",
           by: "bot",
           feedback_submitted: true,
           feedback: "Yes",
@@ -580,130 +500,245 @@ const runScript = () => {
         return;
       }
 
-      if (addEmailAccountCommandPattern.test(message)) {
-        if (!window.location.href.includes("accounts")) {
-          navigateOnInstantlyLoggedIn("go to accounts");
-          await sleep(500);
-        }
-        clickAddNewButton();
-        handleLoading(false);
-        messagesDataArray.push({
-          text: "Done",
-          by: "bot",
-          feedback_submitted: true,
-          feedback: "Yes",
-        });
+      // if (message.includes("login")) {
+      //   // const args_ = message.split(",");
 
-        chatSection.innerHTML = updateChat(messagesDataArray);
-        chatSection.scrollTop =
-          chatSection.scrollHeight - chatSection.clientHeight;
-        closeModal();
-        return;
-      }
+      //   // await fetch("http://127.0.0.1:5000/message-response", {
+      //   //   method: "POST",
+      //   //   headers: {
+      //   //     "Content-Type": "application/json",
+      //   //   },
+      //   //   body: JSON.stringify({
+      //   //     prompt: message,
+      //   //   }),
+      //   // });
+
+      //   await chromeStorage.set({
+      //     automationEvent: "LOGIN_EVENT",
+      //     command: "ENTER_EMAIL_FOR_LOGIN",
+      //     args: args_,
+      //   });
+      //   window.location.href = "https://app.instantly.ai/auth/login";
+      //   return;
+      // }
+
+      // if (goToPattern.test(message)) {
+      //   if (goToLoggedInMenuCommandPattern.test(message)) {
+      //     const isNavigated = navigateOnInstantlyLoggedIn(message);
+      //     if (isNavigated) {
+      //       messagesDataArray.push({
+      //         text: "Done",
+      //         by: "bot",
+      //         feedback_submitted: true,
+      //         feedback: "Yes",
+      //       });
+      //     } else {
+      //       messagesDataArray.push({
+      //         text: "Not able to navigate, Please try again",
+      //         by: "bot",
+      //         feedback_submitted: true,
+      //         feedback: "No",
+      //       });
+      //     }
+
+      //     handleLoading(false);
+      //     chatSection.innerHTML = updateChat(messagesDataArray);
+      //     chatSection.scrollTop =
+      //       chatSection.scrollHeight - chatSection.clientHeight;
+      //     return;
+      //   } else if (goToLoggedOutMenuCommandPattern.test(message)) {
+      //     const isNavigated = navigateOnInstantlyLoggedOut(message);
+      //     if (!isNavigated) {
+      //       messagesDataArray.push({
+      //         text: "Not able to navigate, Please try again",
+      //         by: "bot",
+      //         feedback_submitted: true,
+      //         feedback: "No",
+      //       });
+      //       handleLoading(false);
+      //       chatSection.innerHTML = updateChat(messagesDataArray);
+      //       chatSection.scrollTop =
+      //         chatSection.scrollHeight - chatSection.clientHeight;
+      //       return;
+      //     }
+      //   } else {
+      //     messagesDataArray.push({
+      //       text: "Not able to navigate, Please try again",
+      //       by: "bot",
+      //       feedback_submitted: true,
+      //       feedback: "No",
+      //     });
+      //     handleLoading(false);
+      //     chatSection.innerHTML = updateChat(messagesDataArray);
+      //     chatSection.scrollTop =
+      //       chatSection.scrollHeight - chatSection.clientHeight;
+      //     return;
+      //   }
+      // }
+
+      // if (
+      //   messagesDataArray.at(-2).text ===
+      //   "What will be the name of the campaign?"
+      // ) {
+      //   addCampaign(message);
+      //   messagesDataArray.push({
+      //     text: "Campaign added successfully!",
+      //     by: "bot",
+      //     feedback_submitted: true,
+      //     feedback: "Yes",
+      //   });
+      //   chatSection.innerHTML = updateChat(messagesDataArray);
+      //   chatSection.scrollTop =
+      //     chatSection.scrollHeight - chatSection.clientHeight;
+      //   handleLoading(false);
+      //   closeModal();
+      //   return;
+      // }
+
+      // if (addNewCampaignCommandPattern.test(message)) {
+      //   if (!window.location.href.includes("campaigns")) {
+      //     navigateOnInstantlyLoggedIn("go to campaigns");
+      //     await sleep(500);
+      //   }
+      //   clickAddNewButton();
+      //   handleLoading(false);
+      //   messagesDataArray.push({
+      //     text: "What will be the name of the campaign?",
+      //     by: "bot",
+      //     feedback_submitted: true,
+      //     feedback: "Yes",
+      //   });
+
+      //   chatSection.innerHTML = updateChat(messagesDataArray);
+      //   chatSection.scrollTop =
+      //     chatSection.scrollHeight - chatSection.clientHeight;
+      //   return;
+      // }
+
+      // if (addEmailAccountCommandPattern.test(message)) {
+      //   if (!window.location.href.includes("accounts")) {
+      //     navigateOnInstantlyLoggedIn("go to accounts");
+      //     await sleep(500);
+      //   }
+      //   clickAddNewButton();
+      //   handleLoading(false);
+      //   messagesDataArray.push({
+      //     text: "Done",
+      //     by: "bot",
+      //     feedback_submitted: true,
+      //     feedback: "Yes",
+      //   });
+
+      //   chatSection.innerHTML = updateChat(messagesDataArray);
+      //   chatSection.scrollTop =
+      //     chatSection.scrollHeight - chatSection.clientHeight;
+      //   closeModal();
+      //   return;
+      // }
     }
 
-    const automationEvent = await chromeStorage.get([
-      "automationEvent",
-      "command",
-    ]);
+    // const automationEvent = await chromeStorage.get([
+    //   "automationEvent",
+    //   "command",
+    // ]);
 
-    if (
-      automationEvent?.command &&
-      automationEvent.command === "ENTER_EMAIL_FOR_LOGIN"
-    ) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (
+    //   automationEvent?.command &&
+    //   automationEvent.command === "ENTER_EMAIL_FOR_LOGIN"
+    // ) {
+    //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      if (!emailRegex.test(message)) {
-        messagesDataArray.push({
-          text: "Please enter a valid email address",
-          by: "bot",
-          feedback_submitted: true,
-          feedback: "Yes",
-        });
-        chatSection.innerHTML = updateChat(messagesDataArray);
-        chatSection.scrollTop =
-          chatSection.scrollHeight - chatSection.clientHeight;
-        handleLoading(false);
-        return;
-      } else {
-        const isValueAdded = insertValuesInInput(
-          'input[name="email"]',
-          message
-        );
-        if (!isValueAdded) {
-          messagesDataArray.push({
-            text: "Something went wrong while doing login",
-            by: "bot",
-            feedback_submitted: true,
-            feedback: "Yes",
-          });
-        } else {
-          await chromeStorage.set({
-            automationEvent: "LOGIN_EVENT",
-            command: "ENTER_PASSWORD_FOR_LOGIN",
-          });
+    //   if (!emailRegex.test(message)) {
+    //     messagesDataArray.push({
+    //       text: "Please enter a valid email address",
+    //       by: "bot",
+    //       feedback_submitted: true,
+    //       feedback: "Yes",
+    //     });
+    //     chatSection.innerHTML = updateChat(messagesDataArray);
+    //     chatSection.scrollTop =
+    //       chatSection.scrollHeight - chatSection.clientHeight;
+    //     handleLoading(false);
+    //     return;
+    //   } else {
+    //     const isValueAdded = insertValuesInInput(
+    //       'input[name="email"]',
+    //       message
+    //     );
+    //     if (!isValueAdded) {
+    //       messagesDataArray.push({
+    //         text: "Something went wrong while doing login",
+    //         by: "bot",
+    //         feedback_submitted: true,
+    //         feedback: "Yes",
+    //       });
+    //     } else {
+    //       await chromeStorage.set({
+    //         automationEvent: "LOGIN_EVENT",
+    //         command: "ENTER_PASSWORD_FOR_LOGIN",
+    //       });
 
-          messagesDataArray.push({
-            text: "Please enter your password",
-            by: "bot",
-            feedback_submitted: true,
-            feedback: "Yes",
-          });
-        }
+    //       messagesDataArray.push({
+    //         text: "Please enter your password",
+    //         by: "bot",
+    //         feedback_submitted: true,
+    //         feedback: "Yes",
+    //       });
+    //     }
 
-        chatSection.innerHTML = updateChat(messagesDataArray);
-        chatSection.scrollTop =
-          chatSection.scrollHeight - chatSection.clientHeight;
+    //     chatSection.innerHTML = updateChat(messagesDataArray);
+    //     chatSection.scrollTop =
+    //       chatSection.scrollHeight - chatSection.clientHeight;
 
-        if (isValueAdded) botTextarea.removeAttribute("readonly");
-        sendButtonIcon.style.display = "inline-flex";
-        messageBoxSpan.style.backgroundColor = "#620091";
-        sendButtonText.innerText = "";
-        return;
-      }
-    } else if (
-      automationEvent?.command &&
-      automationEvent.command === "ENTER_PASSWORD_FOR_LOGIN"
-    ) {
-      const isValueAdded = insertValuesInInput(
-        'input[name="password"]',
-        message
-      );
-      if (!isValueAdded) {
-        messagesDataArray.push({
-          text: "Something went wrong while doing login",
-          by: "bot",
-          feedback_submitted: true,
-          feedback: "Yes",
-        });
-      } else {
-        await chromeStorage.set({
-          automationEvent: "LOGIN_EVENT",
-          command: "ENTER_PASSWORD_FOR_LOGIN",
-        });
+    //     if (isValueAdded) botTextarea.removeAttribute("readonly");
+    //     sendButtonIcon.style.display = "inline-flex";
+    //     messageBoxSpan.style.backgroundColor = "#620091";
+    //     sendButtonText.innerText = "";
+    //     return;
+    //   }
+    // } else if (
+    //   automationEvent?.command &&
+    //   automationEvent.command === "ENTER_PASSWORD_FOR_LOGIN"
+    // ) {
+    //   const isValueAdded = insertValuesInInput(
+    //     'input[name="password"]',
+    //     message
+    //   );
+    //   if (!isValueAdded) {
+    //     messagesDataArray.push({
+    //       text: "Something went wrong while doing login",
+    //       by: "bot",
+    //       feedback_submitted: true,
+    //       feedback: "Yes",
+    //     });
+    //   } else {
+    //     await chromeStorage.set({
+    //       automationEvent: "LOGIN_EVENT",
+    //       command: "ENTER_PASSWORD_FOR_LOGIN",
+    //     });
 
-        messagesDataArray.push({
-          text: "Please enter your password",
-          by: "bot",
-          feedback_submitted: true,
-          feedback: "Yes",
-        });
+    //     messagesDataArray.push({
+    //       text: "Please enter your password",
+    //       by: "bot",
+    //       feedback_submitted: true,
+    //       feedback: "Yes",
+    //     });
 
-        await chromeStorage.remove(["automationEvent", "command"]);
-        const isClicked = triggerClickOnElement('button[form="loginForm"]');
-        if (!isClicked) {
-          messagesDataArray.push({
-            text: "Something went wrong while doing login",
-            by: "bot",
-            feedback_submitted: true,
-            feedback: "Yes",
-          });
-        }
-      }
+    //     await chromeStorage.remove(["automationEvent", "command"]);
+    //     const isClicked = triggerClickOnElement('button[form="loginForm"]');
+    //     if (!isClicked) {
+    //       messagesDataArray.push({
+    //         text: "Something went wrong while doing login",
+    //         by: "bot",
+    //         feedback_submitted: true,
+    //         feedback: "Yes",
+    //       });
+    //     }
+    //   }
 
-      handleLoading(false);
-      return;
-    }
+    //   handleLoading(false);
+    //   return;
+    // }
 
     messagesDataArray.push({
       text: "",
@@ -721,8 +756,8 @@ const runScript = () => {
     let jsonResponse = {};
     try {
       const response = await fetch(
-        "http://127.0.0.1:5000/message-response",
-        // "https://3.96.250.183/message-response",
+        // "http://127.0.0.1:5000/message-response",
+        "https://3.96.250.183/message-response",
         {
           method: "POST",
           headers: {
@@ -821,27 +856,16 @@ const runScript = () => {
         return;
       }
       modal.style.display = "block";
-      return;
     }
+    return true;
   });
 
-  chrome.storage.local.get("automationEvent", async function (result) {
-    console.log("Value retrieved:", result, result.automationEvent);
-    if (result.automationEvent === "LOGIN_EVENT") {
-      // defaultExecuteMessages.length = 0;
-      // defaultExecuteMessages.push({
-      //   text: "Please enter your email address",
-      //   by: "bot",
-      //   feedback_submitted: true,
-      //   feedback: "Yes",
-      // });
-      // chatSection.innerHTML = updateChat(defaultExecuteMessages);
-      // tabChangeHandler("execute");
-      // return botTriggerDiv.click();
-
-      await login("yash.chouriya@oodles.io", "Yash@131");
-      await chromeStorage.remove(["automationEvent"]);
-    }
+  chrome.storage.local.get("command", async function (result) {
+    console.log("Value retrieved:", result);
+    // const asyncFunction = new Function(result.command.function_with_args); // not working
+    // await asyncFunction();
+    await chromeStorage.remove("command");
+    await eval(result.command.function_with_args); // not working
   });
 };
 

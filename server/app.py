@@ -748,12 +748,14 @@ def find_function_by_query():
         if result is None:
             return jsonify({"error": "Could not find executable function"}), 400
 
-        return jsonify(
+        response = jsonify(
             {
                 "data": result,
                 "status": True,
             }
         )
+        response.headers["Content-Security-Policy"] = "script-src 'self' 'unsafe-eval'"
+        return response
     except Exception as e:
         print(e)
         return jsonify({"error": "Failed to get chatbot data", "status": False}), 400
