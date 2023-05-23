@@ -21,6 +21,8 @@ click-repl==0.2.0
 cmake==3.26.3
 confection==0.0.4
 cymem==2.0.7
+elastic-transport==8.4.0
+elasticsearch==8.7.0
 en-core-web-md==3.5.0
 filelock==3.12.0
 Flask==2.3.2

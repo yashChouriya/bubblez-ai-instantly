@@ -28,6 +28,7 @@ import hashlib, pathlib
 import superpowered
 from sqlalchemy.orm import relationship, class_mapper
 from dataclasses import dataclass
+from function_finder import find_executable_function
 
 # from google.oauth2 import id_token
 # from google.auth.transport import requests
@@ -729,6 +730,27 @@ def get_chatbot_by_id(uid):
                     "kb_id": chatbot.kb_id,
                     "user_id": chatbot.user_id,
                 },
+                "status": True,
+            }
+        )
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Failed to get chatbot data", "status": False}), 400
+
+
+@app.route("/find-function", methods=["POST"])
+def find_function_by_query():
+    try:
+        data = request.get_json()
+        query = data.get("query")
+        args = data.get("args")
+        result = find_executable_function(query, args)
+        if result is None:
+            return jsonify({"error": "Could not find executable function"}), 400
+
+        return jsonify(
+            {
+                "data": result,
                 "status": True,
             }
         )

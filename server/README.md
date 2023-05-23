@@ -24,31 +24,10 @@ This repository demonstrates how to create a simple chatbot by combining the pow
    ```
    pip install -r requirements.txt
    ```
-4. Replace `example.env` to `.env` and change `YOUR_API_KEY` in `app.py` with your OpenAI API key.
-5. Start the Redis server:
-   ```
-   redis-server
-   ```
-6. Start the Celery worker:
-   ```
-   celery -A app.celery worker --loglevel=info
-   ```
-7. Start the Flask app:
-   ```
-   flask run
-   ```
-8. Send a POST request to `http://localhost:5000/chat-async` with a JSON body containing the prompt, for example (gpt):
-   ```
-   { "prompt": "What is the capital of France?" }
-   ```
-9. You will receive a JSON response containing the task id, for example:
-   ```
-   { "task_id": "8d5f0b5d-a5e5-4b8f-b5f5-5a5a5a5a5a5a" }
-   ```
-10. Use the task id to check the status of the task and retrieve the generated text by sending a GET request to `http://localhost:5000/result/<task_id>`, for example:
-    ```
-    http://localhost:5000/result/8d5f0b5d-a5e5-4b8f-b5f5-5a5a5a5a5a5a
-    ```
+4. Replace `example.env` to `.env` and update it with your api keys.
+5. Run "flask db init"
+6. Run "sh migrations.sh"
+7. Run "flask run"
 
 ## Docker
 

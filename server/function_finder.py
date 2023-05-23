@@ -39,7 +39,7 @@ es.indices.create(index=index_name, body=index_settings)
 # Sample function data
 function_data = [
     {
-        "function_name": "login(email=arg1, password=arg2)",
+        "function_name": "login(args)",
         "description": "handles the login of the user to the website",
     },
     {
@@ -51,7 +51,7 @@ function_data = [
         "description": "creates or signup a new user account",
     },
     {
-        "function_name": "create_campaign(campaign_name=arg1)",
+        "function_name": "create_campaign(args)",
         "description": "creates a new campaign",
     },
 ]
@@ -61,7 +61,7 @@ for data in function_data:
     es.index(index=index_name, body=data)
 
 
-def find_executable_function(user_query):
+def find_executable_function(user_query, args):
     # Perform a search in Elasticsearch
     search_body = {
         "query": {
@@ -79,6 +79,21 @@ def find_executable_function(user_query):
         ]
         print(f"Matched function: {matched_function}")
         print(f"Description: {matched_description}")
-        return
+
+        function_with_args = matched_function.replace("args)", "")
+
+        for arg in args:
+            function_with_args += f"'{arg}',"
+
+        if function_with_args[-1] == ",":
+            function_with_args = function_with_args[:-1]
+
+        function_with_args += ");"
+
+        return {
+            "function_name": matched_function.replace("()", ""),
+            "function_with_args": function_with_args,
+        }
     else:
         print("No matching function found.")
+        return None
