@@ -469,7 +469,7 @@ const runScript = () => {
         const argArray = message.split(",");
         const query = argArray[0];
         argArray.splice(0, 1);
-        const result = await fetch("http://127.0.0.1:5000/find-function", {
+        const result = await fetch("https://3.96.250.183/find-function", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
