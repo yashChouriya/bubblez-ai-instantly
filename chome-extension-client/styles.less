@@ -370,24 +370,32 @@
 }
 
 #commands-container {
-  position: absolute;
   display: none;
-  bottom: 20%;
-  left: 1%;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 16px 10px 15px;
+  border: 1px solid #eaecec;
+  border-radius: 24px;
+  width: fit-content;
+  margin: auto;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  cursor: pointer;
 
-  .command {
-    background: #e9eaeb;
-    cursor: pointer;
-    border-radius: 8px;
-    padding: 10px;
-    gap: 9px;
+  .command-text {
     font-family: "Inter";
     font-style: normal;
     font-weight: 500;
-    font-size: 13px;
-    line-height: 16px;
-    text-align: center;
+    font-size: 12px;
+    line-height: 15px;
     color: #1e1e1e;
+  }
+
+  .command-icon {
+    width: 12px;
+    height: 12px;
+    background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/open-arrow.svg");
+    margin-left: 0.3rem;
   }
 }
 

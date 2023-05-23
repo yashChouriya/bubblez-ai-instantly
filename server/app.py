@@ -26,11 +26,13 @@ import xmltodict
 import base64
 import hashlib, pathlib
 import superpowered
-from sqlalchemy.orm import relationship
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from google_auth_oauthlib.flow import Flow
-from google.auth.transport.requests import requests as google_requests
+from sqlalchemy.orm import relationship, class_mapper
+from dataclasses import dataclass
+
+# from google.oauth2 import id_token
+# from google.auth.transport import requests
+# from google_auth_oauthlib.flow import Flow
+# from google.auth.transport.requests import requests as google_requests
 
 app = Flask(__name__)
 CORS(app)
@@ -49,6 +51,7 @@ jwt = JWTManager(app)
 
 
 # User model
+@dataclass
 class User(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(50), nullable=True)
@@ -61,6 +64,7 @@ class User(db.Model):
     chatbots = relationship("Chatbot", backref="user")
 
 
+@dataclass
 class Chatbot(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(255), nullable=False)
@@ -76,6 +80,7 @@ class Chatbot(db.Model):
     qa = relationship("QA", backref="chatbot")
 
 
+@dataclass
 class File(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(255), nullable=False)
@@ -89,6 +94,7 @@ class File(db.Model):
     )
 
 
+@dataclass
 class Link(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     url = db.Column(db.Text, nullable=False)
@@ -102,6 +108,7 @@ class Link(db.Model):
     )
 
 
+@dataclass
 class QA(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     question = db.Column(db.Text, nullable=False)
@@ -143,15 +150,15 @@ superpowered.init(
     api_key_id=SUPERPOWERED_API_KEY_ID, api_key_secret=SUPERPOWERED_API_KEY_SECRET
 )
 
-flow = Flow.from_client_secrets_file(  # Flow is OAuth 2.0 a class that stores all the information on how we want to authorize our users
-    client_secrets_file="./client_secret.json",
-    scopes=[
-        "https://www.googleapis.com/auth/userinfo.profile",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "openid",
-    ],  # here we are specifing what do we get after the authorization
-    redirect_uri="http://127.0.0.1:5000/callback",  # and the redirect URI is the point where the user will end up after the authorization
-)
+# flow = Flow.from_client_secrets_file(  # Flow is OAuth 2.0 a class that stores all the information on how we want to authorize our users
+#     client_secrets_file="./client_secret.json",
+#     scopes=[
+#         "https://www.googleapis.com/auth/userinfo.profile",
+#         "https://www.googleapis.com/auth/userinfo.email",
+#         "openid",
+#     ],  # here we are specifing what do we get after the authorization
+#     redirect_uri="http://127.0.0.1:5000/callback",  # and the redirect URI is the point where the user will end up after the authorization
+# )
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -694,6 +701,37 @@ def get_my_bots():
             )
 
         return jsonify({"data": serialized_bots, "status": True})
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Failed to get chatbot data", "status": False}), 400
+
+
+def serialize_chatbot(chatbot):
+    try:
+        pass
+    except Exception as e:
+        print(e)
+        return {}
+
+
+@app.route("/chatbot/<uid>", methods=["GET"])
+@jwt_required()
+def get_chatbot_by_id(uid):
+    try:
+        user_id = get_jwt_identity()
+        chatbot = Chatbot.query.filter_by(id=uid, user_id=user_id)[0]
+        return jsonify(
+            {
+                "data": {
+                    "id": chatbot.id,
+                    "name": chatbot.name,
+                    "data": chatbot.data,
+                    "kb_id": chatbot.kb_id,
+                    "user_id": chatbot.user_id,
+                },
+                "status": True,
+            }
+        )
     except Exception as e:
         print(e)
         return jsonify({"error": "Failed to get chatbot data", "status": False}), 400
