@@ -19,7 +19,7 @@ from crawler import get_all_urls
 from datetime import timedelta
 from datetime import datetime
 from flask_migrate import Migrate
-from sqlalchemy import JSON
+from sqlalchemy import JSON, Enum, Column
 import tempfile
 import uuid
 import xmltodict
@@ -29,6 +29,8 @@ import superpowered
 from sqlalchemy.orm import relationship, class_mapper
 from dataclasses import dataclass
 from function_finder import find_executable_function
+
+# from rephrase import rephrase_paragraph
 
 # from google.oauth2 import id_token
 # from google.auth.transport import requests
@@ -118,6 +120,19 @@ class QA(db.Model):
     document_id = db.Column(db.String(255), nullable=False)
     chatbot_id = db.Column(db.String(36), db.ForeignKey("chatbot.id"), nullable=False)
     superpowered_metadata = db.Column(JSON, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class ChatHistory(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    message_from = db.Column(
+        db.Enum("bot", "human", name="message_from_enum"), nullable=False
+    )
+    message = db.Column(db.Text, nullable=False)
+    chatbot_id = db.Column(db.String(36), db.ForeignKey("chatbot.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -707,12 +722,12 @@ def get_my_bots():
         return jsonify({"error": "Failed to get chatbot data", "status": False}), 400
 
 
-def serialize_chatbot(chatbot):
-    try:
-        pass
-    except Exception as e:
-        print(e)
-        return {}
+# def serialize_chatbot(chatbot):
+#     try:
+#         pass
+#     except Exception as e:
+#         print(e)
+#         return {}
 
 
 @app.route("/chatbot/<uid>", methods=["GET"])
@@ -743,8 +758,7 @@ def find_function_by_query():
     try:
         data = request.get_json()
         query = data.get("query")
-        args = data.get("args")
-        result = find_executable_function(query, args)
+        result = find_executable_function(query)
         if result is None:
             return jsonify({"error": "Could not find executable function"}), 400
 
@@ -756,6 +770,98 @@ def find_function_by_query():
         )
         response.headers["Content-Security-Policy"] = "script-src 'self' 'unsafe-eval'"
         return response
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Failed to get chatbot data", "status": False}), 400
+
+
+def add_message_in_chat_history(message_from, message, chatbot_id):
+    try:
+        saved_message = ChatHistory(
+            message_from=message_from, message=message, chatbot_id=chatbot_id
+        )
+        saved_message
+        db.session.add(saved_message)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+@app.route("/chatbot/<uid>/message", methods=["POST"])
+@jwt_required()
+def new_message(uid):
+    user_id = get_jwt_identity()
+    chatbot = Chatbot.query.filter_by(id=uid, user_id=user_id)[0]
+    prompt = request.json.get("message")
+    add_message_in_chat_history(
+        message_from="human", message=prompt, chatbot_id=chatbot.id
+    )
+    request_payload = {
+        "knowledge_base_ids": [chatbot.kb_id],
+        "query": prompt,
+        "summarize_results": True,
+    }
+
+    response = requests.post(
+        url=f"{superpowered_ai_base_url}/knowledge_bases/query",
+        auth=(SUPERPOWERED_API_KEY_ID, SUPERPOWERED_API_KEY_SECRET),
+        json=request_payload,
+    )
+
+    error_message = "I'm sorry, I didn't quite understand your question. Can you please rephrase it or ask me something else?"
+
+    if response.status_code != 200:
+        add_message_in_chat_history(
+            message_from="bot", message=error_message, chatbot_id=chatbot.id
+        )
+        return (
+            jsonify(
+                {
+                    "message": error_message,
+                    "status": False,
+                }
+            ),
+            400,
+        )
+
+    json_response = json.loads(response.text)
+    clean_summary = re.sub(r"\[[^\]]*\]", "", json_response["summary"])
+
+    add_message_in_chat_history(
+        message_from="bot", message=clean_summary, chatbot_id=chatbot.id
+    )
+
+    return jsonify(
+        {
+            "message": clean_summary,
+            "status": True,
+        }
+    )
+
+
+@app.route("/chatbot/<uid>/messages", methods=["GET"])
+@jwt_required()
+def get_chat_history(uid):
+    try:
+        messages = ChatHistory.query.filter_by(chatbot_id=uid)
+        history = []
+        for message in messages:
+            history.append(
+                {
+                    "by": message.message_from,
+                    "message": message.message,
+                    "created_at": message.created_at,
+                }
+            )
+
+        return jsonify(
+            {
+                "history": history,
+                "status": True,
+            }
+        )
     except Exception as e:
         print(e)
         return jsonify({"error": "Failed to get chatbot data", "status": False}), 400

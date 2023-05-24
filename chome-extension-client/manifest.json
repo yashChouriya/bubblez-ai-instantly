@@ -12,7 +12,42 @@
   "content_scripts": [
     {
       "matches": ["https://instantly.ai/*", "https://app.instantly.ai/*"],
-      "js": ["actions.js", "login.js", "content_script.v2.js"],
+      "js": [
+        "actions.js",
+
+        "./flows/active-or-pause-campaign.js",
+        "./flows/export-campaign-file.js",
+        "./flows/open-campaign-analytics.js",
+        "./flows/update-campaign-name.js",
+        "./flows/add-new-campaign.js",
+        "./flows/forgot-password-request.js",
+        "./flows/open-campaign-leads.js",
+        "./flows/update-users-email.js",
+        "./flows/add-new-member-in-workspace.js",
+        "./flows/get-shareable-campaign-link.js",
+        "./flows/open-campaign-options.js",
+        "./flows/update-users-name.js",
+        "./flows/connect-imap-or-smtp-email-account.js",
+        "./flows/index.js",
+        "./flows/open-campaign-schedule.js",
+        "./flows/update-users-password.js",
+        "./flows/delete-campaign.js",
+        "./flows/login.js",
+        "./flows/open-campaign-sequences.js",
+        "./flows/update-workspace-name.js",
+        "./flows/download-campaign-analytics.js",
+        "./flows/logout.js",
+        "./flows/open-email-setting.js",
+        "./flows/duplicate-campaign.js",
+        "./flows/navigate-to-side-menu.js",
+        "./flows/sign-up.js",
+        "./flows/enable-or-disable-email-warmup.js",
+        "./flows/open-billings-page.js",
+        "./flows/start-product-tour.js",
+
+        "./flow_mappings.js",
+        "content_script.v2.js"
+      ],
       "css": ["styles.less"],
       "run_at": "document_idle",
       "all_frames": true
