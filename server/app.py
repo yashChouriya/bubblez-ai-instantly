@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, redirect, session
+from flask import Flask, request, jsonify, redirect, session, send_file
 from flask_cors import CORS
 from celery import Celery
 import openai, requests, os, json, re, spacy
@@ -842,7 +842,6 @@ def new_message(uid):
 
 
 @app.route("/chatbot/<uid>/messages", methods=["GET"])
-@jwt_required()
 def get_chat_history(uid):
     try:
         messages = ChatHistory.query.filter_by(chatbot_id=uid)
@@ -851,7 +850,9 @@ def get_chat_history(uid):
             history.append(
                 {
                     "by": message.message_from,
-                    "message": message.message,
+                    "text": message.message,
+                    "feedback_submitted": True,
+                    "feedback": "Yes",
                     "created_at": message.created_at,
                 }
             )
@@ -900,6 +901,11 @@ def get_chat_history(uid):
 # return redirect(
 #     "/protected_area"
 # )  # the final page where the authorized users will end up
+
+
+@app.route("/embed.js")
+def serve_js_file():
+    return send_file("../embedable-client/dest/embed.js", mimetype="text/javascript")
 
 
 with app.app_context():
