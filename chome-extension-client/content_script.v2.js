@@ -472,6 +472,25 @@ const runScript = () => {
         const storedData = await chromeStorage.get("command");
 
         if (storedData?.command) {
+          if (
+            message.toLowerCase() === "no" ||
+            message.toLowerCase() === "nope"
+          ) {
+            await chromeStorage.remove(["command"]);
+            messagesDataArray.push({
+              text: "Okay",
+              by: "bot",
+              feedback_submitted: true,
+              feedback: "Yes",
+            });
+
+            chatSection.innerHTML = updateChat(messagesDataArray);
+            chatSection.scrollTop =
+              chatSection.scrollHeight - chatSection.clientHeight;
+            handleLoading(false);
+            return;
+          }
+
           const argArray = message.split(",");
           const commandData = storedData.command;
           commandData.args = argArray;
