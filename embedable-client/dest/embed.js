@@ -242,6 +242,7 @@ const GLOBAL_CHATBOT_STYLES = `
   right: 1%;
   background: #620091;
   top: 10%;
+  cursor: pointer;
 }
 .messageBox .messageBoxSpan .send-arrow {
   background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/send.svg");
@@ -2301,15 +2302,17 @@ let flowMappings = {
 };
 
 console.log("!!FLOW MAPPING LOADED!!");
-;const runScript = () => {
+;const BACKEND_BASE_URL = "http://127.0.0.1:5000";
+// const BACKEND_BASE_URL = "https://ai.getpermian.com";
+let CHAT_HISTORY = [];
+let CHAT_BOT_ID = null;
+
+const runScript = () => {
   console.log("permian-config", window.permianBotConfig);
 
   const sleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
   };
-
-  const backendBaseUrl = "https://ai.getpermian.com";
-  // const backendBaseUrl = "http://127.0.0.1:5000";
 
   const localStorageWrapper = {
     get: (keys) => {
@@ -2416,6 +2419,8 @@ console.log("!!FLOW MAPPING LOADED!!");
       feedback_submitted: true,
       feedback: "Yes",
     },
+
+    ...CHAT_HISTORY,
   ];
 
   const defaultExecuteMessages = [
@@ -2581,13 +2586,11 @@ console.log("!!FLOW MAPPING LOADED!!");
                 <div class="${message.by}-svg"></div>
               </div>
               <div class="${message.by}-head-reply">
-                <div class="inner-chat-text ${message.by}-text-align">${
-          message.text
-        }</div>
+                <div class="inner-chat-text ${message.by}-text-align">${message.text
+          }</div>
               </div>
           </div>
-          <div style="display:${
-            showFeedback ? "inherit" : "none"
+          <div style="display:${showFeedback ? "inherit" : "none"
           }">${feedbackDiv}</div>
         </div>
         `;
@@ -2603,6 +2606,7 @@ console.log("!!FLOW MAPPING LOADED!!");
         `;
       }
     }
+    chatSection.scrollTop = chatSection.scrollHeight - chatSection.clientHeight;
     return chatSectionInnerHtml;
   };
 
@@ -2714,7 +2718,7 @@ console.log("!!FLOW MAPPING LOADED!!");
           }
           return;
         } else {
-          const result = await fetch(`${backendBaseUrl}/find-function`, {
+          const result = await fetch(`${BACKEND_BASE_URL}/find-function`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -2773,13 +2777,13 @@ console.log("!!FLOW MAPPING LOADED!!");
     let botResponseMessage = "";
     let jsonResponse = {};
     try {
-      const response = await fetch(`${backendBaseUrl}/message-response`, {
+      const response = await fetch(`${BACKEND_BASE_URL}/chatbot/${CHAT_BOT_ID}/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: message,
+          message,
         }),
       });
 
@@ -2877,12 +2881,11 @@ console.log("!!FLOW MAPPING LOADED!!");
 
   localStorageWrapper.get(["command"]).then(async (result) => {
     console.log("Value retrieved:", result);
+    await localStorageWrapper.remove(["command"]);
     if (result.command) {
       await sleep(2000);
       const command = result.command;
-      await chromeStorage.remove("command");
       const func = flowMappings[command.func]["func"];
-      await chromeStorage.remove("command");
       try {
         await func(...command.args);
       } catch (error) {
@@ -2892,15 +2895,34 @@ console.log("!!FLOW MAPPING LOADED!!");
   });
 };
 
-setTimeout(() => {
+setTimeout(async () => {
   try {
+    console.log("!!!BOT SCRIPT LOADED!!!");
+
     if (!window?.permianBotConfig?.chatbotId) {
       return console.error(
         "!!!PERMIAN CHATBOT ID IS NOT FOUND IN GLOBAL VARIABLE 'permianBotConfig'!!!"
       );
     }
 
-    console.log("DOMContentLoaded");
+    CHAT_BOT_ID = window.permianBotConfig.chatbotId;
+
+    try {
+      const oldChatData = await fetch(
+        `${BACKEND_BASE_URL}/chatbot/${CHAT_BOT_ID}/messages`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const oldChatDataJson = await oldChatData.json();
+      CHAT_HISTORY = [...CHAT_HISTORY, ...oldChatDataJson.history];
+    } catch (error) {
+      console.error("!!!COULD NOT GET CHAT HISTORY!!!", error);
+    }
+
     const styleTag = document.createElement("style");
     styleTag.textContent = GLOBAL_CHATBOT_STYLES;
     document.head.appendChild(styleTag);

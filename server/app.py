@@ -29,6 +29,8 @@ import superpowered
 from sqlalchemy.orm import relationship, class_mapper
 from dataclasses import dataclass
 from function_finder import find_executable_function
+import stripe
+import time
 
 # from rephrase import rephrase_paragraph
 
@@ -40,7 +42,8 @@ from function_finder import find_executable_function
 app = Flask(__name__)
 CORS(app)
 load_dotenv()
-
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_ENDPOINT_SECRET = os.getenv("STRIPE_ENDPOINT_SECRET")
 app.config["SECRET_KEY"] = "your-secret-key"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///pemian-ai.db"  # SQLite database file
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -65,6 +68,17 @@ class User(db.Model):
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
     chatbots = relationship("Chatbot", backref="user")
+    stripe_data = relationship("StripeCustomer", backref="user")
+
+
+class StripeCustomer(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    customer_id = db.Column(db.String(255), nullable=False)
+    subscription_id = db.Column(db.String(255), nullable=True)
+    is_subscribed = db.Column(db.Boolean, default=False, nullable=False)
+    plan_details = db.Column(JSON, nullable=False)
+    meta_data = db.Column(JSON, nullable=True)
 
 
 @dataclass
@@ -206,7 +220,18 @@ def validate_url(url):
 
 # Helper function to convert User object to dictionary
 def user_to_dict(user):
-    return {"id": user.id, "name": user.name, "email": user.email}
+    stripe_customer = StripeCustomer.query.filter_by(user_id=user.id).first()
+
+    payload = {"id": user.id, "name": user.name, "email": user.email, "stripe_data": {}}
+
+    if stripe_customer:
+        payload["stripe_data"]["customer_id"] = stripe_customer.customer_id
+        payload["stripe_data"]["subscription_id"] = stripe_customer.subscription_id
+        payload["stripe_data"]["is_subscribed"] = stripe_customer.is_subscribed
+        payload["stripe_data"]["plan_details"] = stripe_customer.plan_details
+        payload["stripe_data"]["meta_data"] = stripe_customer.meta_data
+
+    return payload
 
 
 @celery.task
@@ -731,11 +756,14 @@ def get_my_bots():
 
 
 @app.route("/chatbot/<uid>", methods=["GET"])
-@jwt_required()
 def get_chatbot_by_id(uid):
     try:
-        user_id = get_jwt_identity()
-        chatbot = Chatbot.query.filter_by(id=uid, user_id=user_id)[0]
+        chatbot = Chatbot.query.get(uid)
+        if not chatbot:
+            return (
+                jsonify({"data": None, "status": False, "error": "Chatbot not found!"}),
+                404,
+            )
         return jsonify(
             {
                 "data": {
@@ -790,55 +818,84 @@ def add_message_in_chat_history(message_from, message, chatbot_id):
 
 
 @app.route("/chatbot/<uid>/message", methods=["POST"])
-@jwt_required()
 def new_message(uid):
-    user_id = get_jwt_identity()
-    chatbot = Chatbot.query.filter_by(id=uid, user_id=user_id)[0]
-    prompt = request.json.get("message")
-    add_message_in_chat_history(
-        message_from="human", message=prompt, chatbot_id=chatbot.id
-    )
-    request_payload = {
-        "knowledge_base_ids": [chatbot.kb_id],
-        "query": prompt,
-        "summarize_results": True,
-    }
-
-    response = requests.post(
-        url=f"{superpowered_ai_base_url}/knowledge_bases/query",
-        auth=(SUPERPOWERED_API_KEY_ID, SUPERPOWERED_API_KEY_SECRET),
-        json=request_payload,
-    )
-
-    error_message = "I'm sorry, I didn't quite understand your question. Can you please rephrase it or ask me something else?"
-
-    if response.status_code != 200:
+    try:
+        chatbot = Chatbot.query.filter_by(id=uid)[0]
+        prompt = request.json.get("message")
         add_message_in_chat_history(
-            message_from="bot", message=error_message, chatbot_id=chatbot.id
+            message_from="human", message=prompt, chatbot_id=chatbot.id
         )
+        request_payload = {
+            "knowledge_base_ids": [chatbot.kb_id],
+            "query": prompt,
+            "summarize_results": True,
+        }
+
+        response = requests.post(
+            url=f"{superpowered_ai_base_url}/knowledge_bases/query",
+            auth=(SUPERPOWERED_API_KEY_ID, SUPERPOWERED_API_KEY_SECRET),
+            json=request_payload,
+        )
+
+        links = Link.query.filter_by(chatbot_id=uid)
+        json_data = []
+        array_of_titles = []
+        for link in links:
+            json_data.append(
+                {"title": link.superpowered_metadata["title"], "url": link.url}
+            )
+            array_of_titles.append(link.superpowered_metadata["title"])
+
+        top_three_relative_urls = find_top_3_relative_sentences(
+            prompt, array_of_titles, json_data
+        )
+
+        print(top_three_relative_urls)
+
+        error_message = "I'm sorry, I didn't quite understand your question. Can you please rephrase it or ask me something else?"
+
+        if response.status_code != 200:
+            add_message_in_chat_history(
+                message_from="bot", message=error_message, chatbot_id=chatbot.id
+            )
+            return (
+                jsonify(
+                    {
+                        "message": error_message,
+                        "relative_urls": top_three_relative_urls,
+                        "status": False,
+                    }
+                ),
+                400,
+            )
+
+        json_response = json.loads(response.text)
+        clean_summary = re.sub(r"\[[^\]]*\]", "", json_response["summary"])
+
+        add_message_in_chat_history(
+            message_from="bot", message=clean_summary, chatbot_id=chatbot.id
+        )
+
+        return jsonify(
+            {
+                "message": clean_summary,
+                "relative_urls": top_three_relative_urls,
+                "status": True,
+            }
+        )
+    except Exception as e:
+        print(e)
         return (
             jsonify(
                 {
-                    "message": error_message,
+                    "message": "",
+                    "relative_urls": [],
                     "status": False,
+                    "error": "Something went wrong, Please try again",
                 }
             ),
-            400,
+            500,
         )
-
-    json_response = json.loads(response.text)
-    clean_summary = re.sub(r"\[[^\]]*\]", "", json_response["summary"])
-
-    add_message_in_chat_history(
-        message_from="bot", message=clean_summary, chatbot_id=chatbot.id
-    )
-
-    return jsonify(
-        {
-            "message": clean_summary,
-            "status": True,
-        }
-    )
 
 
 @app.route("/chatbot/<uid>/messages", methods=["GET"])
@@ -866,6 +923,206 @@ def get_chat_history(uid):
     except Exception as e:
         print(e)
         return jsonify({"error": "Failed to get chatbot data", "status": False}), 400
+
+
+@app.route("/create-subscription", methods=["POST"])
+@jwt_required()
+def create_subscription():
+    try:
+        user_id = get_jwt_identity()
+        payment_method = request.json["paymentMethod"]
+        plan = request.json["plan"]
+
+        user = User.query.get(user_id)
+
+        if not user:
+            return jsonify({"error": "User not found with provided id"}), 404
+
+        stripe_data = StripeCustomer.query.filter_by(user_id=user_id).first()
+
+        if stripe_data:
+            customer_id = stripe_data.customer_id
+            stripe.PaymentMethod.attach(payment_method, customer=customer_id)
+            stripe.Customer.modify(
+                customer_id, invoice_settings={"default_payment_method": payment_method}
+            )
+        else:
+            customer = create_stripe_customer(user, payment_method)
+            customer_id = customer["id"]
+            stripe_data = StripeCustomer(user_id=user_id, customer_id=customer_id)
+
+        price_id = plan["price"]["priceId"]
+        subscription = stripe.Subscription.create(
+            customer=customer_id,
+            items=[{"price": price_id}],
+            payment_settings={
+                "payment_method_options": {"card": {"request_three_d_secure": "any"}},
+                "payment_method_types": ["card"],
+                "save_default_payment_method": "on_subscription",
+            },
+            expand=["latest_invoice.payment_intent"],
+        )
+
+        stripe_data.subscription_id = subscription["id"]
+        stripe_data.plan_details = plan
+        db.session.add(stripe_data)
+        db.session.commit()
+
+        return jsonify(
+            {
+                "clientSecret": subscription["latest_invoice"]["payment_intent"][
+                    "client_secret"
+                ],
+                "subscriptionId": subscription["id"],
+            }
+        )
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+def create_stripe_customer(user, payment_method):
+    try:
+        payload = {
+            "email": user.email,
+            "name": user.name,
+            "metadata": {"user_website_id": user.id},
+            "payment_method": payment_method,
+            "invoice_settings": {"default_payment_method": payment_method},
+            "address": {
+                "city": "Ontario",
+                "country": "Canada",
+                "line1": "abcd 121",
+                "line2": "abcd 132",
+                "postal_code": "25695",
+                "state": "Manitoba",
+            },
+        }
+        customer = stripe.Customer.create(**payload)
+        print(customer)
+        return customer.to_dict()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.route("/upgrade-subscription", methods=["POST"])
+@jwt_required()
+def upgrade_subscription():
+    try:
+        user_id = get_jwt_identity()  # Assuming you have access to the user's ID
+        new_plan = request.json.get("newPlan")
+        stripe_customer = StripeCustomer.query.filter_by(user_id=user_id).first()
+
+        if not stripe_customer:
+            return (
+                jsonify({"error": "Subscription details not found!", "status": False}),
+                400,
+            )
+
+        new_price_id = new_plan["price"]["priceId"]
+
+        if new_price_id == stripe_customer.plan_details["price"]["priceId"]:
+            return (
+                jsonify({"error": "Can't upgrade to same plan!", "status": False}),
+                400,
+            )
+
+        # Set proration date to this moment
+        proration_date = int(time.time())
+
+        subscription = stripe.Subscription.retrieve(stripe_customer.subscription_id)
+
+        # See what the next invoice would look like with a price switch and proration set
+        items = [
+            {
+                "id": subscription["items"]["data"][0]["id"],
+                "price": new_price_id,  # Switch to new price
+            }
+        ]
+
+        updated_subs = stripe.Subscription.modify(
+            stripe_customer.subscription_id,
+            items=items,
+            proration_date=proration_date,
+            cancel_at_period_end=False,
+        )
+
+        stripe_customer.subscription_id = updated_subs["id"]
+        stripe_customer.plan_details = new_plan
+        stripe_customer.meta_data = {
+            "subscription_create_date": updated_subs["current_period_start"],
+            "subscription_renew_date": updated_subs["current_period_end"],
+            "event": updated_subs,
+            "is_cancelled": False,
+            "cancelled_data": None,
+        }
+
+        db.session.add(stripe_customer)
+        db.session.commit()
+
+        return jsonify({"message": "Subscription upgraded successfully!"})
+
+    except stripe.StripeError as error:
+        return jsonify({"message": error.raw.get("message", str(error))}), 500
+
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    event = None
+    payload = request.data
+    sig_header = request.headers["STRIPE_SIGNATURE"]
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_ENDPOINT_SECRET
+        )
+    except ValueError as e:
+        # Invalid payload
+        raise e
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        raise e
+
+    # Handle the event
+    if event["type"] == "invoice.payment_succeeded":
+        invoice_payment_success = event["data"]["object"]
+        if invoice_payment_success["status"] == "paid":
+            customer_id = invoice_payment_success["customer"]
+
+            stripeCustomer = StripeCustomer.query.filter_by(
+                customer_id=customer_id
+            ).first()
+
+            if stripeCustomer:
+                data = invoice_payment_success["lines"]["data"][0]["period"]
+                stripeCustomer.subscription_id = invoice_payment_success["subscription"]
+                stripeCustomer.is_subscribed = True
+                stripeCustomer.meta_data = {
+                    "subscription_create_date": data["start"],
+                    "subscription_renew_date": data["end"],
+                    "event": invoice_payment_success,
+                }
+
+                db.session.add(stripeCustomer)
+                db.session.commit()
+
+    elif event["type"] == "invoice.payment_failed":
+        invoice_payment_failed = event["data"]["object"]
+
+    elif event["type"] == "subscription_schedule.canceled":
+        subscription_cancelled = event["data"]["object"]
+
+    elif event["type"] == "customer.subscription.deleted":
+        subscription_deleted = event["data"]["object"]
+
+    else:
+        print("Unhandled event type {}".format(event["type"]))
+
+    return jsonify(success=True)
+
+
+@app.route("/embed.js")
+def serve_js_file():
+    return send_file("../embedable-client/dest/embed.js", mimetype="text/javascript")
 
 
 # @app.route("/google/login")  # the page where the user can login
@@ -903,13 +1160,22 @@ def get_chat_history(uid):
 # )  # the final page where the authorized users will end up
 
 
-@app.route("/embed.js")
-def serve_js_file():
-    return send_file("../embedable-client/dest/embed.js", mimetype="text/javascript")
+# def test(uid):
+#     chatbot = Chatbot.query.get()
+
+#     links = chatbot.links
+
+#     json_data = []
+
+#     for link in links:
+#         json_data.append({"url": link.url})
+
+#     print(json_data)
 
 
 with app.app_context():
     db.create_all()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)

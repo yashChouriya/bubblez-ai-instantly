@@ -242,6 +242,7 @@ const GLOBAL_CHATBOT_STYLES = `
   right: 1%;
   background: #620091;
   top: 10%;
+  cursor: pointer;
 }
 .messageBox .messageBoxSpan .send-arrow {
   background-image: url("https://bubblez-dev.s3.ca-central-1.amazonaws.com/icons/send.svg");
