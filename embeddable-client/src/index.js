@@ -1,5 +1,5 @@
-const BACKEND_BASE_URL = "http://127.0.0.1:5000";
-// const BACKEND_BASE_URL = "https://ai.getpermian.com";
+// const BACKEND_BASE_URL = "http://127.0.0.1:5000";
+const BACKEND_BASE_URL = "https://ai.getpermian.com";
 let CHAT_HISTORY = [];
 let CHAT_BOT_ID = null;
 
@@ -282,11 +282,13 @@ const runScript = () => {
                 <div class="${message.by}-svg"></div>
               </div>
               <div class="${message.by}-head-reply">
-                <div class="inner-chat-text ${message.by}-text-align">${message.text
-          }</div>
+                <div class="inner-chat-text ${message.by}-text-align">${
+          message.text
+        }</div>
               </div>
           </div>
-          <div style="display:${showFeedback ? "inherit" : "none"
+          <div style="display:${
+            showFeedback ? "inherit" : "none"
           }">${feedbackDiv}</div>
         </div>
         `;
@@ -473,15 +475,18 @@ const runScript = () => {
     let botResponseMessage = "";
     let jsonResponse = {};
     try {
-      const response = await fetch(`${BACKEND_BASE_URL}/chatbot/${CHAT_BOT_ID}/message`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message,
-        }),
-      });
+      const response = await fetch(
+        `${BACKEND_BASE_URL}/chatbot/${CHAT_BOT_ID}/message`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+          }),
+        }
+      );
 
       jsonResponse = await response.json();
       console.log(jsonResponse);
